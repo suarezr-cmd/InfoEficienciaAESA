@@ -1,0 +1,2707 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Control de Eficiencia Planta (OEE)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  
+  <style>
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 8mm;
+      }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-sizing: border-box !important;
+      }
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      header, nav, #controles-diaria, #controles-acumulado, .no-print, #vista-diaria, #vista-acumulado, #vista-bi, #vista-disponibilidad, #vista-stock-repuestos {
+        display: none !important;
+      }
+      #vista-graficos {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .print-card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+      }
+      .grafico-mensual-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .grafico-disponibilidad-card {
+        break-before: page;
+        page-break-before: always;
+      }
+      .grafico-paradas-card {
+        break-before: page;
+        page-break-before: always;
+      }
+      .paradas-grafico-grid {
+        display: grid !important;
+        grid-template-columns: 2fr 1fr !important;
+        grid-template-rows: 1fr !important;
+      }
+      .causa-parada-panel {
+        grid-template-columns: 72px minmax(0, 1fr) !important;
+        gap: 4px !important;
+        padding-bottom: 2px !important;
+      }
+      .causa-parada-title {
+        max-width: 72px !important;
+        font-size: 9px !important;
+      }
+      .causa-parada-donut {
+        width: 68px !important;
+        height: 68px !important;
+      }
+      .causa-parada-legend {
+        font-size: 8px !important;
+        line-height: 1.05 !important;
+      }
+      .causa-parada-label {
+        display: -webkit-box !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-line-clamp: 2 !important;
+        overflow: hidden !important;
+      }
+      .tabla-encabezado-print {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        border: 2px solid #000000 !important;
+        margin-bottom: 15px !important;
+        display: table !important;
+      }
+      .tabla-encabezado-print td {
+        border: 1px solid #000000 !important;
+        padding: 4px 8px !important;
+        vertical-align: middle !important;
+      }
+      .grafico-mensual-contenedor {
+        height: 480px !important;
+      }
+      .grafico-maquina-card {
+        break-before: page;
+        page-break-before: always;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      body.imprimir-analisis-16-gp > div {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+      }
+      body.imprimir-analisis-16-gp header,
+      body.imprimir-analisis-16-gp #vista-diaria,
+      body.imprimir-analisis-16-gp #vista-acumulado,
+      body.imprimir-analisis-16-gp #vista-graficos,
+      body.imprimir-analisis-16-gp #vista-bi,
+      body.imprimir-analisis-16-gp #vista-disponibilidad,
+      body.imprimir-analisis-16-gp #vista-stock-repuestos {
+        display: none !important;
+      }
+      body.imprimir-analisis-16-gp #vista-analisis-16-gp {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      body.imprimir-analisis-16-gp #analisis-16-gp-graficos {
+        display: block !important;
+      }
+      body.imprimir-analisis-16-gp .analisis-16-gp-card {
+        display: block !important;
+        width: 100% !important;
+        height: 190mm !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        break-after: page;
+        page-break-after: always;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      body.imprimir-analisis-16-gp .analisis-16-gp-card:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
+      body.imprimir-analisis-16-gp .analisis-16-gp-encabezado {
+        margin-bottom: 4mm !important;
+      }
+      body.imprimir-analisis-16-gp .analisis-16-gp-print-periodo {
+        display: block !important;
+        margin-top: 0 !important;
+      }
+      body.imprimir-analisis-16-gp .analisis-16-gp-chart {
+        height: 135mm !important;
+        margin-top: 5mm !important;
+      }
+      body.imprimir-analisis-16-gp .tipologia-sectores {
+        display: none !important;
+      }
+      canvas {
+        width: 100% !important;
+        height: 100% !important;
+        display: block !important;
+      }
+    }
+
+    .logo-angel-estrada {
+      width: 100%;
+      height: 44px;
+      object-fit: cover;
+      object-position: center 48%;
+      display: block;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen">
+
+  <div class="max-w-[1700px] mx-auto p-4 md:p-6 space-y-6">
+
+    <!-- BARRA SUPERIOR Y NAVEGACIÓN -->
+    <header class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 md:p-4 flex flex-col gap-3 no-print">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2 whitespace-nowrap">
+            <i class="fa-solid fa-chart-line text-blue-600"></i>
+            Sistema de Eficiencia de Planta (OEE)
+          </h1>
+          <p class="text-xs text-slate-500 mt-1">Control de Producción - Diaria, Acumulada y Gráficos</p>
+        </div>
+
+        <nav class="flex flex-wrap justify-end gap-1">
+            <button id="nav-btn-diaria" onclick="cambiarVista('diaria')" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-all bg-emerald-200 text-slate-900 hover:bg-emerald-300 shadow-sm whitespace-nowrap">
+              <i class="fa-solid fa-calendar-day mr-1"></i> Eficiencia Diaria
+            </button>
+            <button id="nav-btn-acumulado" onclick="cambiarVista('acumulado')" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-all bg-slate-700 text-slate-100 hover:bg-slate-600 whitespace-nowrap">
+              <i class="fa-solid fa-layer-group mr-1"></i> Acumulado
+            </button>
+            <button id="nav-btn-graficos" onclick="cambiarVista('graficos')" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-all bg-slate-700 text-slate-100 hover:bg-slate-600 whitespace-nowrap">
+              <i class="fa-solid fa-chart-area mr-1"></i> Gráficos
+            </button>
+            <button id="nav-btn-disponibilidad" onclick="cambiarVista('disponibilidad')" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-all bg-slate-700 text-slate-100 hover:bg-slate-600 whitespace-nowrap">
+              <i class="fa-solid fa-screwdriver-wrench mr-1"></i> Disponibilidad (A)
+            </button>
+            <button id="nav-btn-stock-repuestos" onclick="cambiarVista('stock-repuestos')" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-all bg-slate-700 text-slate-100 hover:bg-slate-600 whitespace-nowrap">
+              <i class="fa-solid fa-boxes-stacked mr-1"></i> Stock Repuestos
+            </button>
+            <button id="nav-btn-analisis-16-gp" onclick="cambiarVista('analisis-16-gp')" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-all bg-slate-700 text-slate-100 hover:bg-slate-600 whitespace-nowrap">
+              <i class="fa-solid fa-magnifying-glass-chart mr-1"></i> Análisis 16 GP
+            </button>
+            <button id="nav-btn-bi" onclick="cambiarVista('bi')" class="px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-all bg-slate-700 text-slate-100 hover:bg-slate-600 whitespace-nowrap">
+              <i class="fa-solid fa-chart-column mr-1"></i> B.I.
+            </button>
+        </nav>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-2">
+        <div id="controles-diaria" class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+          <input type="date" id="fecha-selector" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg block px-3 py-1.5 font-medium cursor-pointer shadow-sm" onchange="cargarDatosFecha()">
+
+          <button onclick="document.getElementById('file-input-unico').click()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Cargar Archivos (SAP / HPHI / DENCRE)
+          </button>
+          <input type="file" id="file-input-unico" accept=".xlsx, .xls" multiple class="hidden" onchange="subirArchivosUnicos(event)">
+        </div>
+
+        <div id="controles-acumulado" class="hidden flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+          <span class="text-xs font-extrabold uppercase text-slate-500">Desde:</span>
+          <input type="date" id="fecha-desde" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg block px-3 py-1.5 font-medium cursor-pointer shadow-sm" onchange="guardarRangoAcumulado(); cargarAcumulado()">
+
+          <span class="text-xs font-extrabold uppercase text-slate-500">Hasta:</span>
+          <input type="date" id="fecha-hasta" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg block px-3 py-1.5 font-medium cursor-pointer shadow-sm" onchange="guardarRangoAcumulado(); cargarAcumulado()">
+
+          <button onclick="cargarAcumulado()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-filter"></i> Consultar
+          </button>
+        </div>
+
+        <div id="controles-analisis-16-gp" class="hidden flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+          <span class="text-xs font-extrabold uppercase text-slate-500">Desde:</span>
+          <input type="date" id="analisis-16-gp-desde" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg block px-3 py-1.5 font-medium cursor-pointer shadow-sm" onchange="cargarAnalisis16GP()">
+          <span class="text-xs font-extrabold uppercase text-slate-500">Hasta:</span>
+          <input type="date" id="analisis-16-gp-hasta" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg block px-3 py-1.5 font-medium cursor-pointer shadow-sm" onchange="cargarAnalisis16GP()">
+          <button onclick="cargarAnalisis16GP()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-filter"></i> Consultar
+          </button>
+          <button onclick="imprimirAnalisis16GP()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-print text-yellow-400"></i> Imprimir gráficos (A4 horizontal)
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- VISTA EFICIENCIA DIARIA -->
+    <main id="vista-diaria" class="space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+          <span class="text-xs font-bold uppercase text-slate-500">Eficiencia Global</span>
+          <span id="kpi-eficiencia-global" class="text-3xl font-extrabold text-slate-900 mt-2">0.00%</span>
+          <span id="kpi-horas-global" class="text-xs text-slate-500 mt-2">0.00 / 0 hs</span>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+          <span class="text-xs font-bold uppercase text-slate-500">Eficiencia PT (6 dig)</span>
+          <span id="kpi-eficiencia-pt" class="text-3xl font-extrabold text-emerald-600 mt-2">0.00%</span>
+          <span id="kpi-horas-pt" class="text-xs text-slate-500 mt-2">0.00 / 0 hs</span>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+          <span class="text-xs font-bold uppercase text-slate-500">Eficiencia SE (9 dig)</span>
+          <span id="kpi-eficiencia-se" class="text-3xl font-extrabold text-amber-600 mt-2">0.00%</span>
+          <span id="kpi-horas-se" class="text-xs text-slate-500 mt-2">0.00 / 0 hs</span>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+          <span class="text-xs font-bold uppercase text-slate-500">Kilos Fabricados PT</span>
+          <span id="kpi-kilos-pt" class="text-2xl font-extrabold text-slate-900 mt-2">0 Kg</span>
+          <span class="text-xs text-emerald-600 mt-2 font-medium">Solo PT</span>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex flex-col justify-between">
+          <span class="text-xs font-bold uppercase text-slate-500">Unidades Fabricadas</span>
+          <div class="mt-2 text-xs font-bold">
+            <div>PT: <span id="kpi-unidades-pt">0 Un</span></div>
+            <div class="text-slate-500">SE: <span id="kpi-unidades-se">0 Un</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
+          <h2 class="font-bold text-slate-800">Detalle de Producción por Máquina y Turno</h2>
+          <label class="inline-flex items-center cursor-pointer text-xs font-semibold text-slate-600">
+            <span class="mr-2">Solo Activas</span>
+            <input type="checkbox" id="toggle-activas" class="sr-only peer" onchange="cargarDatosFecha()">
+            <div class="w-8 h-4 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-[12px] border-collapse">
+            <thead>
+              <tr class="bg-yellow-300 border-b border-yellow-400 text-slate-900 font-extrabold uppercase text-[11px]">
+                <th class="p-2 border-r border-yellow-400 text-center">Puesto</th>
+                <th class="p-2 border-r border-yellow-400 text-center">Turno</th>
+                <th class="p-2 border-r border-yellow-400 text-center">Legajo</th>
+                <th class="p-2 border-r border-yellow-400 text-center">Orden</th>
+                <th class="p-2 border-r border-yellow-400 text-center">Producto</th>
+                <th class="p-2 border-r border-yellow-400 text-right">R.Max</th>
+                <th class="p-2 border-r border-yellow-400 text-right">Peso Un.</th>
+                <th class="p-2 border-r border-yellow-400 text-right">Unid. Prod.</th>
+                <th class="p-2 border-r border-yellow-400 text-right">Cod 910</th>
+                <th class="p-2 border-r border-yellow-400 text-right">Cod 920</th>
+                <th class="p-2 border-r border-yellow-400 text-right">Programado</th>
+                <th class="p-2 border-r border-yellow-400 text-right">Producido (kg)</th>
+                <th class="p-2 border-r border-yellow-400 text-right">Diferencia</th>
+                <th class="p-2 border-r border-yellow-400 text-right">Hs Prog.</th>
+                <th class="p-2 border-r border-yellow-400 text-right">Hs Prod.</th>
+                <th class="p-2 text-center">Eficiencia</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-body-diaria" class="divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- VISTA ACUMULADO -->
+    <main id="vista-acumulado" class="hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-200 bg-slate-900 text-white flex flex-col md:flex-row justify-between items-center gap-4">
+          <h2 class="font-extrabold text-lg flex items-center gap-2">
+            <i class="fa-solid fa-table-list text-yellow-400"></i> ACUMULADO GENERAL DE PLANTA
+          </h2>
+
+          <div class="flex flex-wrap items-center justify-center gap-3 text-sm font-bold">
+            <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+              <span class="text-slate-400 text-xs uppercase mr-2">OBJETIVO ANUAL:</span>
+              <input id="hdr-obj-anual" type="number" step="0.1" class="w-20 bg-slate-700 text-white font-extrabold text-right rounded px-1" value="0" onchange="guardarMetaPlanta('objetivo_anual', this.value)" aria-label="Objetivo anual de planta">%
+            </div>
+            <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+              <span class="text-slate-400 text-xs uppercase mr-2">RESULTADO ANTERIOR:</span>
+              <input id="hdr-res-anterior" type="number" step="0.1" class="w-20 bg-slate-700 text-white font-extrabold text-right rounded px-1" value="0" onchange="guardarMetaPlanta('resultado_anterior', this.value)" aria-label="Resultado anterior de planta">%
+            </div>
+            <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+              <span class="text-slate-400 text-xs uppercase mr-2">ACUMULADO:</span>
+              <span id="hdr-acumulado" class="text-emerald-400 font-black text-base">0.0%</span>
+            </div>
+            <div class="bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+              <label for="hdr-objetivo-mes-kg" class="text-slate-400 text-xs uppercase mr-2">Objetivo Mes:</label>
+              <input id="hdr-objetivo-mes-kg" type="number" min="0" step="1" class="w-24 bg-slate-700 text-white font-extrabold text-right rounded px-1" value="0" onchange="guardarMetaPlanta('objetivo_mes_kg', this.value)" aria-label="Objetivo mensual de producción en kilos"> <span class="text-slate-400">Kilos</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-[11px] border-collapse">
+            <thead>
+              <tr class="bg-slate-200 text-slate-900 font-extrabold uppercase border-b border-slate-300">
+                <th class="p-2 border-r border-slate-300">Máquina</th>
+                <th class="p-2 border-r border-slate-300 text-right bg-blue-50">Objetivo Anual</th>
+                <th class="p-2 border-r border-slate-300 text-right bg-blue-50">Resultado Anterior</th>
+                <th class="p-2 border-r border-slate-300 text-right font-black">Acumulado</th>
+                <th class="p-2 border-r border-slate-300 text-right text-red-700">Pérdidas Acum.</th>
+                <th class="p-2 border-r border-slate-300 text-right">Desvío Kg vs Progr</th>
+                <th class="p-2 border-r border-slate-300 text-right">H.Prog.</th>
+                <th class="p-2 border-r border-slate-300 text-right">H.prod.</th>
+                <th class="p-2 border-r border-slate-300 text-right">Kg Programado</th>
+                <th class="p-2 border-r border-slate-300 text-right">Kg Real</th>
+                <th class="p-2 border-r border-slate-300 text-right">Kg / hora Real</th>
+                <th class="p-2 border-r border-slate-300 text-right">Cumpl. Progr. prod.</th>
+                <th class="p-2 border-r border-slate-300 text-right bg-red-50">Cod 910 (Kg)</th>
+                <th class="p-2 border-r border-slate-300 text-right bg-red-50">Cod 920 (Kg)</th>
+                <th class="p-2 text-right font-bold bg-red-100">Diferencia (Kg)</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-body-acumulado" class="divide-y divide-slate-200 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- VISTA GRÁFICOS -->
+    <main id="vista-graficos" class="hidden space-y-4">
+      <div class="grafico-mensual-card bg-white rounded-xl shadow-sm border border-slate-200 p-6 print-card">
+        <div class="flex justify-between items-center mb-4 no-print">
+          <div class="text-xs text-slate-500 font-semibold">
+            <i class="fa-solid fa-circle-info text-blue-500 mr-1"></i> Calculado automáticamente a mes cerrado anterior (Ciclo Julio - Junio).
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="mes-graficos-selector" class="text-xs font-bold text-slate-600">Mes de máquinas:</label>
+            <input type="month" id="mes-graficos-selector" class="bg-white text-slate-800 text-sm font-bold px-3 py-2 rounded-lg border border-slate-300 shadow-sm cursor-pointer" onchange="cambiarMesGraficos(this.value)" aria-label="Seleccionar mes para gráficos de máquinas">
+            <button onclick="imprimirGrafico()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow">
+              <i class="fa-solid fa-print text-yellow-400"></i> Imprimir Reporte (A4 Horizontal)
+            </button>
+          </div>
+        </div>
+
+        <table class="tabla-encabezado-print border-2 border-black w-full text-black bg-white mb-4">
+          <tr>
+            <td style="width: 25%; border-right: 2px solid #000; padding: 6px;">
+              <img class="logo-angel-estrada" src="/logo-angel-estrada.png" alt="Angel Estrada">
+            </td>
+            <td style="width: 50%; border-right: 2px solid #000; text-align: center; padding: 6px;">
+              <h2 style="font-weight: 900; font-size: 22px; margin: 0; text-transform: uppercase;">Eficiencia General Mensual.</h2>
+            </td>
+            <td style="width: 25%; padding: 4px 8px; font-weight: 800; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding-bottom: 2px;">
+                <span>P01-F18</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding: 2px 0;">
+                <span>Rev 01</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 2px;">
+                <span style="text-transform: uppercase;">General Planta La Rioja</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="grafico-mensual-contenedor" style="position: relative; width: 100%; height: 500px;">
+          <canvas id="chartEficienciaMensual"></canvas>
+        </div>
+      </div>
+      <div class="grafico-mensual-card grafico-disponibilidad-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 print-card">
+        <table class="tabla-encabezado-print border-2 border-black w-full text-black bg-white mb-4">
+          <tr>
+            <td style="width: 25%; border-right: 2px solid #000; padding: 6px;">
+              <img class="logo-angel-estrada" src="/logo-angel-estrada.png" alt="Angel Estrada">
+            </td>
+            <td style="width: 50%; border-right: 2px solid #000; text-align: center; padding: 6px;">
+              <h2 style="font-weight: 900; font-size: 22px; margin: 0; text-transform: uppercase;">Disponibilidad General Mensual.</h2>
+            </td>
+            <td style="width: 25%; padding: 4px 8px; font-weight: 800; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding-bottom: 2px;">
+                <span>P01-F18</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding: 2px 0;">
+                <span>Rev 01</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 2px;">
+                <span style="text-transform: uppercase;">General Planta La Rioja</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+        <div class="grafico-mensual-contenedor" style="position: relative; width: 100%; height: 500px;">
+          <canvas id="chartDisponibilidadMensual"></canvas>
+        </div>
+      </div>
+      <div class="grafico-mensual-card grafico-paradas-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 print-card">
+        <table class="tabla-encabezado-print border-2 border-black w-full text-black bg-white mb-4">
+          <tr>
+            <td style="width: 25%; border-right: 2px solid #000; padding: 6px;">
+              <img class="logo-angel-estrada" src="/logo-angel-estrada.png" alt="Angel Estrada">
+            </td>
+            <td style="width: 50%; border-right: 2px solid #000; text-align: center; padding: 6px;">
+              <h2 style="font-weight: 900; font-size: 22px; margin: 0; text-transform: uppercase;">Paradas Código 1 y 14</h2>
+            </td>
+            <td style="width: 25%; padding: 4px 8px; font-weight: 800; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding-bottom: 2px;">
+                <span>P01-F18</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding: 2px 0;">
+                <span>Rev 01</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 2px;">
+                <span id="paradas-mes-label">General Planta La Rioja</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+        <div class="paradas-grafico-grid grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-3">
+          <section class="border border-slate-200 rounded-lg p-3">
+            <h3 class="text-center text-sm font-extrabold text-slate-700 mb-2">HORAS DE PARADA POR MÁQUINA</h3>
+            <div id="treemap-paradas" class="w-full h-[470px]"></div>
+          </section>
+          <section class="border border-slate-200 rounded-lg p-3">
+            <h3 class="text-center text-sm font-extrabold text-slate-700 mb-2">CAUSAS Y PONDERACIÓN DE IMPACTO</h3>
+            <div id="causas-paradas" class="grid grid-rows-3 gap-2 h-[470px]"></div>
+          </section>
+        </div>
+      </div>
+      <div class="grafico-mensual-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 print-card">
+        <table class="tabla-encabezado-print border-2 border-black w-full text-black bg-white mb-4">
+          <tr>
+            <td style="width: 25%; border-right: 2px solid #000; padding: 6px;">
+              <img class="logo-angel-estrada" src="/logo-angel-estrada.png" alt="Angel Estrada">
+            </td>
+            <td style="width: 50%; border-right: 2px solid #000; text-align: center; padding: 6px;">
+              <h2 style="font-weight: 900; font-size: 22px; margin: 0; text-transform: uppercase;">Confiabilidad de Stock Repuestos</h2>
+            </td>
+            <td style="width: 25%; padding: 4px 8px; font-weight: 800; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding-bottom: 2px;">
+                <span>P01-F18</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding: 2px 0;">
+                <span>Rev 01</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 2px;">
+                <span style="text-transform: uppercase;">General Planta La Rioja</span>
+              </div>
+            </td>
+          </tr>
+        </table>
+        <div class="grafico-mensual-contenedor" style="position: relative; width: 100%; height: 500px;">
+          <canvas id="chartConfiabilidadStockRepuestos"></canvas>
+        </div>
+      </div>
+      <div id="estado-graficos" class="hidden bg-white rounded-xl border border-slate-200 p-4 text-center text-slate-500"></div>
+      <div id="graficos-individuales" class="space-y-6"></div>
+    </main>
+
+    <!-- VISTA BAJA DE IMPRODUCTIVIDAD -->
+    <main id="vista-bi" class="hidden space-y-6">
+      <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-5 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">Baja de Improductividad</h2>
+            <p class="text-sm text-slate-500 mt-1">Máquinas detectadas en los reportes SAP cargados, incluidas las excluidas de la eficiencia.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <label for="mes-bi-selector" class="text-xs font-bold uppercase text-slate-600">Mes:</label>
+            <input type="month" id="mes-bi-selector" class="bg-white border border-slate-300 text-slate-800 text-sm rounded-lg px-3 py-2 font-bold shadow-sm cursor-pointer" onchange="cargarMaquinasBI()" aria-label="Seleccionar mes para baja de improductividad">
+            <span id="bi-cantidad-maquinas" class="text-xs font-bold text-slate-500"></span>
+          </div>
+        </div>
+        <div class="max-w-2xl overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead>
+              <tr class="bg-slate-200 text-slate-900 font-extrabold uppercase text-xs">
+                <th class="px-5 py-3 border-b border-slate-300">Máquina</th>
+                <th class="px-5 py-3 border-b border-slate-300 text-right">Eficiencia del mes</th>
+                <th class="px-5 py-3 border-b border-slate-300 text-right">B.I.</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-maquinas-bi" class="divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- VISTA DISPONIBILIDAD -->
+    <main id="vista-disponibilidad" class="hidden space-y-6">
+      <section class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <div class="xl:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-center text-center">
+          <h2 class="font-extrabold text-slate-900">Tiempo medio entre fallas</h2>
+          <p class="text-sm text-slate-700 mt-1">MTBF = (Tiempo total de funcionamiento) / (número de fallas)</p>
+          <h3 class="font-extrabold text-slate-900 mt-5">Tiempo medio de reparación</h3>
+          <p class="text-sm text-slate-700 mt-1">MTTR = (Tiempo total de inactividad) / (número de fallas)</p>
+        </div>
+        <div class="xl:col-span-3 bg-yellow-300 rounded-xl shadow-sm border border-yellow-400 p-5 flex flex-col justify-center items-center text-center">
+          <h2 class="font-extrabold text-slate-900">Disponibilidad</h2>
+          <p class="text-sm text-slate-800 mt-5">A = MTBF / (MTBF + MTTR)</p>
+        </div>
+        <div class="xl:col-span-4 bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-center gap-3">
+          <h2 class="text-sm font-extrabold uppercase text-slate-700">Período consultado</h2>
+          <label class="flex items-center justify-between gap-3 text-sm font-bold text-slate-600">
+            <span>DESDE</span>
+            <input type="date" id="disponibilidad-desde" class="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 font-semibold text-slate-800" onchange="cargarDisponibilidad()">
+          </label>
+          <label class="flex items-center justify-between gap-3 text-sm font-bold text-slate-600">
+            <span>HASTA</span>
+            <input type="date" id="disponibilidad-hasta" class="bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 font-semibold text-slate-800" onchange="cargarDisponibilidad()">
+          </label>
+        </div>
+      </section>
+
+      <div id="disponibilidad-estado" class="hidden bg-white rounded-xl border border-slate-200 p-4 text-center text-sm text-slate-500"></div>
+
+      <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-center text-[12px] border-collapse min-w-[1100px]">
+            <thead>
+              <tr class="bg-slate-300 text-slate-900 font-extrabold text-xs">
+                <th class="px-3 py-2 border-r border-slate-400" colspan="2">Máquina</th>
+                <th class="px-3 py-2 border-r border-slate-400">Hs Totales</th>
+                <th class="px-3 py-2 border-r border-slate-400">902</th>
+                <th class="px-3 py-2 border-r border-slate-400">1</th>
+                <th class="px-3 py-2 border-r border-slate-400">14</th>
+                <th class="px-3 py-2 border-r border-slate-400">Eventos 1</th>
+                <th class="px-3 py-2 border-r-2 border-slate-500">Eventos 14</th>
+                <th class="px-3 py-2 border-r border-slate-400">MTBF</th>
+                <th class="px-3 py-2 border-r border-slate-400">MTTR</th>
+                <th class="px-3 py-2">A</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-disponibilidad" class="divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- VISTA STOCK REPUESTOS -->
+    <main id="vista-stock-repuestos" class="hidden space-y-6">
+      <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900">Stock Repuestos</h2>
+            <p class="text-sm text-slate-500 mt-1">Carga el porcentaje mensual. Los ejercicios van de julio a junio y se guardan automáticamente.</p>
+          </div>
+          <span class="text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 rounded-lg px-3 py-2">Objetivo: 90%</span>
+        </div>
+        <div id="stock-repuestos-estado" class="text-sm text-slate-500 mb-3" role="status" aria-live="polite"></div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-center text-xs border-collapse min-w-[1500px]">
+            <thead id="stock-repuestos-cabecera"></thead>
+            <tbody id="tabla-stock-repuestos" class="divide-y divide-slate-200"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- VISTA ANÁLISIS 16 GP -->
+    <main id="vista-analisis-16-gp" class="hidden space-y-6">
+      <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+        <div class="mb-4">
+          <h2 class="text-lg font-extrabold text-slate-900">Análisis 16 GP</h2>
+          <p class="text-sm text-slate-500 mt-1">Horas de parada por máquina agrupadas por causa (códigos HPHI 1–16).</p>
+        </div>
+        <div id="analisis-16-gp-estado" class="hidden rounded-lg bg-slate-50 p-4 text-center text-sm text-slate-600" role="status" aria-live="polite"></div>
+        <div id="analisis-16-gp-graficos" class="grid grid-cols-1 xl:grid-cols-2 gap-4"></div>
+      </section>
+    </main>
+
+  </div>
+
+  <script>
+    const ordenMaquinasPersonalizado = [26, 1, 2, 278, 178, 115, 213, 113, 35, 4, 3, 6, 218, 212, 112, 12, 117, 80, 708, 20];
+    const indicadorMejorPlugin = {
+      id: 'indicador-mejor',
+      afterDraw(chart) {
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return;
+
+        const escala = Math.min(1, chart.width / 600);
+        const anchoFlecha = 24 * escala;
+        const altoFlecha = 36 * escala;
+        const xFlecha = chartArea.right - 148 * escala;
+        const yFlecha = chartArea.top - 42 * escala;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(xFlecha + anchoFlecha / 2, yFlecha);
+        ctx.lineTo(xFlecha + anchoFlecha, yFlecha + altoFlecha * 0.45);
+        ctx.lineTo(xFlecha + anchoFlecha * 0.68, yFlecha + altoFlecha * 0.45);
+        ctx.lineTo(xFlecha + anchoFlecha * 0.68, yFlecha + altoFlecha);
+        ctx.lineTo(xFlecha + anchoFlecha * 0.32, yFlecha + altoFlecha);
+        ctx.lineTo(xFlecha + anchoFlecha * 0.32, yFlecha + altoFlecha * 0.45);
+        ctx.lineTo(xFlecha, yFlecha + altoFlecha * 0.45);
+        ctx.closePath();
+        ctx.fillStyle = '#70ad47';
+        ctx.strokeStyle = '#548235';
+        ctx.lineWidth = 1;
+        ctx.fill();
+        ctx.stroke();
+
+        const tamanoFuente = 25 * escala;
+        ctx.font = `bold ${tamanoFuente}px Arial`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.strokeText('MEJOR', xFlecha + 34 * escala, yFlecha + altoFlecha / 2);
+        ctx.fillStyle = '#555555';
+        ctx.fillText('MEJOR', xFlecha + 34 * escala, yFlecha + altoFlecha / 2);
+        ctx.restore();
+      }
+    };
+    const indicadorMejorParadasPlugin = {
+      id: 'indicador-mejor-paradas',
+      afterDraw(chart) {
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return;
+
+        const escala = Math.min(1, chart.width / 600);
+        const anchoFlecha = 24 * escala;
+        const altoFlecha = 36 * escala;
+        const xFlecha = chartArea.right - 148 * escala;
+        const yFlecha = chartArea.top - 42 * escala;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(xFlecha + anchoFlecha / 2, yFlecha + altoFlecha);
+        ctx.lineTo(xFlecha + anchoFlecha, yFlecha + altoFlecha * 0.55);
+        ctx.lineTo(xFlecha + anchoFlecha * 0.68, yFlecha + altoFlecha * 0.55);
+        ctx.lineTo(xFlecha + anchoFlecha * 0.68, yFlecha);
+        ctx.lineTo(xFlecha + anchoFlecha * 0.32, yFlecha);
+        ctx.lineTo(xFlecha + anchoFlecha * 0.32, yFlecha + altoFlecha * 0.55);
+        ctx.lineTo(xFlecha, yFlecha + altoFlecha * 0.55);
+        ctx.closePath();
+        ctx.fillStyle = '#70ad47';
+        ctx.strokeStyle = '#548235';
+        ctx.lineWidth = 1;
+        ctx.fill();
+        ctx.stroke();
+
+        const tamanoFuente = 25 * escala;
+        ctx.font = `bold ${tamanoFuente}px Arial`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ffffff';
+        ctx.strokeText('MEJOR', xFlecha + 34 * escala, yFlecha + altoFlecha / 2);
+        ctx.fillStyle = '#555555';
+        ctx.fillText('MEJOR', xFlecha + 34 * escala, yFlecha + altoFlecha / 2);
+        ctx.restore();
+      }
+    };
+    const anotacionesParadasPlugin = {
+      id: 'anotaciones-paradas',
+      afterDatasetsDraw(chart) {
+        const items = chart.options.plugins['anotaciones-paradas']?.items || [];
+        if (!items.length) return;
+
+        const meta = chart.getDatasetMeta(0);
+        const { ctx, chartArea } = chart;
+        if (!chartArea || !meta.data.length) return;
+
+        const escala = Math.min(1, chart.width / 600);
+        const fuente = 11 * escala;
+        const altoLinea = 13 * escala;
+        const anchoTexto = chartArea.width * 0.27;
+        const posiciones = [
+          { x: chartArea.left + 6 * escala, y: chartArea.top - 69 * escala },
+          { x: chartArea.left + chartArea.width * 0.32, y: chartArea.top - 34 * escala }
+        ];
+        const envolverTexto = texto => {
+          const palabras = String(texto).split(/\s+/);
+          const lineas = [];
+          let linea = "";
+          let truncado = false;
+
+          for (const palabra of palabras) {
+            const candidata = linea ? `${linea} ${palabra}` : palabra;
+            if (ctx.measureText(candidata).width <= anchoTexto) {
+              linea = candidata;
+            } else if (linea) {
+              lineas.push(linea);
+              linea = palabra;
+              if (lineas.length === 2) {
+                truncado = true;
+                break;
+              }
+            } else {
+              lineas.push(palabra);
+              if (lineas.length === 2) {
+                truncado = true;
+                break;
+              }
+            }
+          }
+          if (linea && lineas.length < 2) lineas.push(linea);
+          if (truncado && lineas.length) {
+            let ultima = lineas[lineas.length - 1];
+            while (ultima && ctx.measureText(`${ultima}…`).width > anchoTexto) {
+              ultima = ultima.slice(0, -1);
+            }
+            lineas[lineas.length - 1] = `${ultima.trimEnd()}…`;
+          }
+          return lineas;
+        };
+
+        ctx.save();
+        ctx.font = `bold ${fuente}px Arial`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        items.slice(0, 2).forEach((item, indice) => {
+          const elemento = meta.data[item.indice];
+          const posicion = posiciones[indice];
+          if (!elemento || !posicion) return;
+
+          const lineas = envolverTexto(item.descripcion);
+          if (!lineas.length) return;
+          const punto = elemento.tooltipPosition();
+          const yTexto = posicion.y - ((lineas.length - 1) * altoLinea) / 2;
+          const anchoLinea = Math.max(...lineas.map(linea => ctx.measureText(linea).width));
+          const inicioX = posicion.x + anchoLinea + 5 * escala;
+          const inicioY = yTexto + ((lineas.length - 1) * altoLinea) / 2;
+          const finX = punto.x;
+          const finY = Math.max(chartArea.top + 3 * escala, punto.y - 4 * escala);
+          const angulo = Math.atan2(finY - inicioY, finX - inicioX);
+          const tamanoPunta = 5 * escala;
+
+          ctx.beginPath();
+          ctx.moveTo(inicioX, inicioY);
+          ctx.lineTo(finX, finY);
+          ctx.strokeStyle = '#4472c4';
+          ctx.lineWidth = 1.2 * escala;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(finX, finY);
+          ctx.lineTo(
+            finX - tamanoPunta * Math.cos(angulo - Math.PI / 6),
+            finY - tamanoPunta * Math.sin(angulo - Math.PI / 6)
+          );
+          ctx.lineTo(
+            finX - tamanoPunta * Math.cos(angulo + Math.PI / 6),
+            finY - tamanoPunta * Math.sin(angulo + Math.PI / 6)
+          );
+          ctx.closePath();
+          ctx.fillStyle = '#4472c4';
+          ctx.fill();
+
+          lineas.forEach((linea, indiceLinea) => {
+            const yLinea = yTexto + indiceLinea * altoLinea;
+            ctx.lineWidth = 3 * escala;
+            ctx.strokeStyle = '#ffffff';
+            ctx.strokeText(linea, posicion.x, yLinea);
+            ctx.fillStyle = '#1f2937';
+            ctx.fillText(linea, posicion.x, yLinea);
+          });
+        });
+        ctx.restore();
+      }
+    };
+    let chartMensualInstance = null;
+    let chartDisponibilidadMensualInstance = null;
+    let chartStockRepuestosInstance = null;
+    let chartMaquinasInstances = [];
+    let chartCausasParadasInstances = [];
+    let chartAnalisis16GPInstances = [];
+    let solicitudDisponibilidad = 0;
+    let solicitudGraficos = 0;
+    let solicitudAnalisis16GP = 0;
+
+    async function imprimirGrafico() {
+      cambiarVista('graficos', false);
+      await cargarGraficoMensual();
+      requestAnimationFrame(() => {
+        [chartMensualInstance, chartDisponibilidadMensualInstance, chartStockRepuestosInstance, ...chartMaquinasInstances].filter(Boolean).forEach(chart => {
+          chart.resize(1200, 480);
+          chart.update('none');
+        });
+        chartCausasParadasInstances.forEach(chart => {
+          chart.resize();
+          chart.update('none');
+        });
+        window.print();
+      });
+    }
+
+    window.addEventListener('afterprint', () => {
+      document.body.classList.remove("imprimir-analisis-16-gp");
+      [chartMensualInstance, chartDisponibilidadMensualInstance, chartStockRepuestosInstance, ...chartMaquinasInstances, ...chartCausasParadasInstances].filter(Boolean).forEach(chart => {
+        chart.resize();
+        chart.update('none');
+      });
+      chartAnalisis16GPInstances.forEach(chart => {
+        chart.resize();
+        chart.update("none");
+      });
+    });
+
+    function cambiarMesGraficos(mes) {
+      if (!mes) return;
+      cargarGraficoMensual();
+    }
+
+    function guardarRangoAcumulado() {
+      localStorage.setItem("acumulado-desde", document.getElementById("fecha-desde").value);
+      localStorage.setItem("acumulado-hasta", document.getElementById("fecha-hasta").value);
+      localStorage.setItem("acumulado-rango-configurado", "true");
+    }
+
+    function restaurarRangoAcumulado() {
+      if (localStorage.getItem("acumulado-rango-configurado") !== "true") return;
+      document.getElementById("fecha-desde").value = localStorage.getItem("acumulado-desde") || "";
+      document.getElementById("fecha-hasta").value = localStorage.getItem("acumulado-hasta") || "";
+    }
+
+    function cambiarVista(vista, cargarGraficos = true) {
+      const vDiaria = document.getElementById("vista-diaria");
+      const vAcumulado = document.getElementById("vista-acumulado");
+      const vGraficos = document.getElementById("vista-graficos");
+      const vBi = document.getElementById("vista-bi");
+      const vDisponibilidad = document.getElementById("vista-disponibilidad");
+      const vStockRepuestos = document.getElementById("vista-stock-repuestos");
+      const vAnalisis16GP = document.getElementById("vista-analisis-16-gp");
+
+      const ctrlDiaria = document.getElementById("controles-diaria");
+      const ctrlAcumulado = document.getElementById("controles-acumulado");
+      const ctrlAnalisis16GP = document.getElementById("controles-analisis-16-gp");
+
+      const btnDiaria = document.getElementById("nav-btn-diaria");
+      const btnAcumulado = document.getElementById("nav-btn-acumulado");
+      const btnGraficos = document.getElementById("nav-btn-graficos");
+      const btnBi = document.getElementById("nav-btn-bi");
+      const btnDisponibilidad = document.getElementById("nav-btn-disponibilidad");
+      const btnStockRepuestos = document.getElementById("nav-btn-stock-repuestos");
+      const btnAnalisis16GP = document.getElementById("nav-btn-analisis-16-gp");
+      const botones = [btnDiaria, btnAcumulado, btnGraficos, btnBi, btnDisponibilidad, btnStockRepuestos, btnAnalisis16GP];
+      const claseBotonBase = "px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-all whitespace-nowrap";
+      const claseBoton = `${claseBotonBase} bg-slate-700 text-slate-100 hover:bg-slate-600`;
+      const claseBotonActivo = `${claseBotonBase} bg-emerald-200 text-slate-900 hover:bg-emerald-300 shadow-sm`;
+
+      botones.forEach(boton => { boton.className = claseBoton; });
+
+      vDiaria.classList.add("hidden");
+      vAcumulado.classList.add("hidden");
+      vGraficos.classList.add("hidden");
+      vBi.classList.add("hidden");
+      vDisponibilidad.classList.add("hidden");
+      vStockRepuestos.classList.add("hidden");
+      vAnalisis16GP.classList.add("hidden");
+      ctrlDiaria.classList.add("hidden");
+      ctrlAcumulado.classList.add("hidden");
+      ctrlAnalisis16GP.classList.add("hidden");
+
+      if (vista === 'diaria') {
+        vDiaria.classList.remove("hidden");
+        ctrlDiaria.classList.remove("hidden");
+        btnDiaria.className = claseBotonActivo;
+        cargarDatosFecha();
+      } else if (vista === 'acumulado') {
+        vAcumulado.classList.remove("hidden");
+        ctrlAcumulado.classList.remove("hidden");
+        btnAcumulado.className = claseBotonActivo;
+        
+        const fSel = document.getElementById("fecha-selector").value;
+        if (fSel && localStorage.getItem("acumulado-rango-configurado") !== "true") {
+          if (!document.getElementById("fecha-desde").value) document.getElementById("fecha-desde").value = fSel;
+          if (!document.getElementById("fecha-hasta").value) document.getElementById("fecha-hasta").value = fSel;
+          guardarRangoAcumulado();
+        }
+        cargarAcumulado();
+      } else if (vista === 'graficos') {
+        vGraficos.classList.remove("hidden");
+        btnGraficos.className = claseBotonActivo;
+        if (cargarGraficos) cargarGraficoMensual();
+      } else if (vista === 'bi') {
+        vBi.classList.remove("hidden");
+        btnBi.className = claseBotonActivo;
+        cargarMaquinasBI();
+      } else if (vista === 'disponibilidad') {
+        vDisponibilidad.classList.remove("hidden");
+        btnDisponibilidad.className = claseBotonActivo;
+        cargarDisponibilidad();
+      } else if (vista === 'stock-repuestos') {
+        vStockRepuestos.classList.remove("hidden");
+        btnStockRepuestos.className = claseBotonActivo;
+        cargarStockRepuestos();
+      } else if (vista === 'analisis-16-gp') {
+        vAnalisis16GP.classList.remove("hidden");
+        ctrlAnalisis16GP.classList.remove("hidden");
+        btnAnalisis16GP.className = claseBotonActivo;
+        inicializarRangoAnalisis16GP();
+        cargarAnalisis16GP();
+      }
+    }
+
+    const mesesStockRepuestos = [
+      { numero: 7, nombre: "Julio" }, { numero: 8, nombre: "Agosto" },
+      { numero: 9, nombre: "Septiembre" }, { numero: 10, nombre: "Octubre" },
+      { numero: 11, nombre: "Noviembre" }, { numero: 12, nombre: "Diciembre" },
+      { numero: 1, nombre: "Enero" }, { numero: 2, nombre: "Febrero" },
+      { numero: 3, nombre: "Marzo" }, { numero: 4, nombre: "Abril" },
+      { numero: 5, nombre: "Mayo" }, { numero: 6, nombre: "Junio" }
+    ];
+
+    function formatearEjercicioStockRepuestos(anioInicio) {
+      return `${String(anioInicio).slice(-2)}-${String(anioInicio + 1).slice(-2)}`;
+    }
+
+    async function cargarStockRepuestos() {
+      const estado = document.getElementById("stock-repuestos-estado");
+      estado.textContent = "Cargando valores guardados...";
+      try {
+        const response = await fetch("/api/stock-repuestos/");
+        const data = await response.json();
+        if (!response.ok || data.estado !== "ok") {
+          throw new Error(data.detail || "No se pudieron cargar los valores de Stock Repuestos.");
+        }
+
+        const valores = new Map();
+        let primerEjercicio = 2023;
+        let ultimoEjercicio = Math.max(2023, Number(data.ejercicio_actual));
+        data.registros.forEach(registro => {
+          const ejercicio = Number(registro.ejercicio_inicio);
+          primerEjercicio = Math.min(primerEjercicio, ejercicio);
+          ultimoEjercicio = Math.max(ultimoEjercicio, ejercicio);
+          valores.set(`${ejercicio}-${registro.mes}`, Number(registro.valor));
+        });
+
+        document.getElementById("stock-repuestos-cabecera").innerHTML = `
+          <tr class="bg-slate-300 text-slate-900 font-extrabold uppercase">
+            <th class="sticky left-0 z-10 bg-slate-300 px-3 py-3 border border-slate-400">Ejercicio</th>
+            ${mesesStockRepuestos.map(mes => `<th class="px-2 py-3 border border-slate-400">${mes.nombre}</th>`).join("")}
+            <th class="px-3 py-3 border border-slate-400">Promedio</th>
+            <th class="px-3 py-3 border border-slate-400">Objetivo</th>
+          </tr>`;
+
+        const filas = [];
+        for (let ejercicio = primerEjercicio; ejercicio <= ultimoEjercicio; ejercicio++) {
+          const valoresEjercicio = mesesStockRepuestos
+            .map(mes => valores.get(`${ejercicio}-${mes.numero}`))
+            .filter(valor => valor !== undefined);
+          const promedio = valoresEjercicio.length
+            ? valoresEjercicio.reduce((suma, valor) => suma + valor, 0) / valoresEjercicio.length
+            : null;
+          const celdas = mesesStockRepuestos.map(mes => {
+            const valor = valores.get(`${ejercicio}-${mes.numero}`);
+            const texto = valor === undefined ? "" : String(valor);
+            return `<td class="px-1.5 py-2 border border-slate-200">
+              <div class="flex items-center justify-center gap-1">
+                <input type="number" min="0" max="100" step="0.01" inputmode="decimal"
+                  class="w-16 text-center border border-slate-300 rounded-md px-1.5 py-1.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  value="${texto}" aria-label="${mes.nombre} del ejercicio ${formatearEjercicioStockRepuestos(ejercicio)}"
+                  data-ejercicio="${ejercicio}" data-mes="${mes.numero}" data-valor-anterior="${texto}"
+                  onchange="guardarStockRepuestos(this)">
+                <span class="text-slate-500">%</span>
+              </div>
+            </td>`;
+          }).join("");
+          filas.push(`<tr class="hover:bg-slate-50">
+            <th class="sticky left-0 z-10 bg-slate-100 px-3 py-2 border border-slate-300 font-extrabold text-slate-800">${formatearEjercicioStockRepuestos(ejercicio)}</th>
+            ${celdas}
+            <td class="px-3 py-2 border border-slate-300 font-extrabold text-slate-900">${promedio === null ? "—" : `${promedio.toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%`}</td>
+            <td class="px-3 py-2 border border-slate-300 font-bold text-slate-700">90%</td>
+          </tr>`);
+        }
+        document.getElementById("tabla-stock-repuestos").innerHTML = filas.join("");
+        estado.textContent = "Los cambios se guardan al salir de cada casillero. El promedio considera únicamente los meses cargados.";
+      } catch (error) {
+        estado.textContent = error.message;
+        estado.className = "text-sm text-red-600 font-semibold mb-3";
+      }
+    }
+
+    async function guardarStockRepuestos(input) {
+      const estado = document.getElementById("stock-repuestos-estado");
+      const valorAnterior = input.dataset.valorAnterior || "";
+      const valorTexto = input.value.trim();
+      const valor = valorTexto === "" ? null : Number(valorTexto);
+      if (valor !== null && (!Number.isFinite(valor) || valor < 0 || valor > 100)) {
+        estado.textContent = "Ingresa un porcentaje entre 0 y 100.";
+        estado.className = "text-sm text-red-600 font-semibold mb-3";
+        input.value = valorAnterior;
+        return;
+      }
+
+      estado.textContent = "Guardando...";
+      estado.className = "text-sm text-slate-500 mb-3";
+      input.disabled = true;
+      try {
+        const response = await fetch("/api/stock-repuestos/", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ejercicio_inicio: Number(input.dataset.ejercicio),
+            mes: Number(input.dataset.mes),
+            valor
+          })
+        });
+        const data = await response.json();
+        if (!response.ok || data.estado !== "ok") {
+          throw new Error(data.detail || "No se pudo guardar el valor.");
+        }
+        input.dataset.valorAnterior = valor === null ? "" : String(valor);
+        estado.textContent = "Valor guardado.";
+        estado.className = "text-sm text-emerald-700 font-semibold mb-3";
+        await cargarStockRepuestos();
+      } catch (error) {
+        input.value = valorAnterior;
+        estado.textContent = error.message;
+        estado.className = "text-sm text-red-600 font-semibold mb-3";
+      } finally {
+        input.disabled = false;
+      }
+    }
+
+    function formatearNumeroDisponibilidad(valor, decimales = 0) {
+      if (valor === null || valor === undefined || !Number.isFinite(Number(valor))) return "-";
+      if (Number(valor) === 0) return "-";
+      return Number(valor).toLocaleString("es-AR", {
+        minimumFractionDigits: decimales,
+        maximumFractionDigits: decimales
+      });
+    }
+
+    function claseHorasInactividad(valor) {
+      if (!valor) return "bg-green-500/80";
+      if (valor > 20) return "bg-red-400";
+      if (valor > 10) return "bg-orange-300";
+      if (valor > 3) return "bg-amber-200";
+      return "bg-yellow-200";
+    }
+
+    function claseDisponibilidad(valor) {
+      if (valor === null || valor === undefined) return "";
+      if (valor >= 98) return "bg-green-500/80";
+      if (valor >= 95) return "bg-lime-300";
+      if (valor >= 92) return "bg-yellow-200";
+      if (valor >= 85) return "bg-orange-300";
+      return "bg-red-400";
+    }
+
+    function crearFilaDisponibilidad(maquina, esTotal = false) {
+      const fila = document.createElement("tr");
+      fila.className = esTotal
+        ? "bg-slate-300 font-extrabold text-slate-950 border-t-2 border-slate-500"
+        : "hover:bg-slate-50";
+      const nombre = esTotal ? "TOTAL" : maquina.nombre;
+      const puesto = esTotal ? "" : maquina.puesto;
+      const mostrar = (campo, decimales = 0) => formatearNumeroDisponibilidad(maquina[campo], decimales);
+      const disponibilidad = maquina.disponibilidad;
+      const disponibilidadTexto = disponibilidad === null || disponibilidad === undefined
+        ? "-"
+        : `${Number(disponibilidad).toLocaleString("es-AR", {
+          minimumFractionDigits: esTotal ? 3 : 1,
+          maximumFractionDigits: esTotal ? 3 : 1
+        })}%`;
+      const celdasMaquina = esTotal
+        ? `<td class="px-3 py-1.5 text-center font-extrabold" colspan="2">TOTAL</td>`
+        : `<td class="px-3 py-1.5 text-right font-semibold">${nombre}</td>
+           <td class="px-3 py-1.5 border-r border-slate-200 font-mono">${puesto}</td>`;
+
+      fila.innerHTML = `
+        ${celdasMaquina}
+        <td class="px-3 py-1.5 border-r border-slate-200 font-mono">${mostrar("horas_totales")}</td>
+        <td class="px-3 py-1.5 border-r border-slate-200 font-mono">${mostrar("horas_902")}</td>
+        <td class="px-3 py-1.5 border-r border-slate-200 font-mono ${esTotal ? "" : claseHorasInactividad(maquina.horas_1)}">${mostrar("horas_1")}</td>
+        <td class="px-3 py-1.5 border-r border-slate-200 font-mono ${esTotal ? "" : claseHorasInactividad(maquina.horas_14)}">${mostrar("horas_14")}</td>
+        <td class="px-3 py-1.5 border-r border-slate-200 font-mono">${mostrar("eventos_1")}</td>
+        <td class="px-3 py-1.5 border-r-2 border-slate-500 font-mono">${mostrar("eventos_14")}</td>
+        <td class="px-3 py-1.5 border-r border-slate-200 font-mono">${mostrar("mtbf", 2)}</td>
+        <td class="px-3 py-1.5 border-r border-slate-200 font-mono">${mostrar("mttr", 2)}</td>
+        <td class="px-3 py-1.5 font-mono font-bold ${esTotal ? "" : claseDisponibilidad(disponibilidad)}">${disponibilidadTexto}</td>
+      `;
+      return fila;
+    }
+
+    async function cargarDisponibilidad() {
+      const desdeInput = document.getElementById("disponibilidad-desde");
+      const hastaInput = document.getElementById("disponibilidad-hasta");
+      const tbody = document.getElementById("tabla-disponibilidad");
+      const estado = document.getElementById("disponibilidad-estado");
+      const consultaInicial = !desdeInput.value && !hastaInput.value;
+      const numeroSolicitud = ++solicitudDisponibilidad;
+
+      if (!consultaInicial && (!desdeInput.value || !hastaInput.value)) {
+        estado.classList.remove("hidden");
+        estado.textContent = "Selecciona las fechas DESDE y HASTA.";
+        tbody.innerHTML = "";
+        return;
+      }
+      if (!consultaInicial && desdeInput.value > hastaInput.value) {
+        estado.classList.remove("hidden");
+        estado.textContent = "La fecha DESDE no puede ser posterior a HASTA.";
+        tbody.innerHTML = "";
+        return;
+      }
+      estado.classList.remove("hidden");
+      estado.textContent = "Cargando datos HPHI...";
+      tbody.innerHTML = "";
+
+      try {
+        const params = new URLSearchParams();
+        if (!consultaInicial) {
+          params.set("desde", desdeInput.value);
+          params.set("hasta", hastaInput.value);
+        }
+        const query = params.toString();
+        const response = await fetch(`/api/disponibilidad/${query ? `?${query}` : ""}`);
+        const data = await response.json();
+        if (numeroSolicitud !== solicitudDisponibilidad) return;
+        if (!response.ok || data.estado !== "ok") {
+          throw new Error(data.detail || "No se pudo consultar la disponibilidad.");
+        }
+
+        if (data.desde && !desdeInput.value) desdeInput.value = data.desde;
+        if (data.hasta && !hastaInput.value) hastaInput.value = data.hasta;
+        if (!data.maquinas.length) {
+          estado.textContent = "No hay registros HPHI en el rango seleccionado.";
+          return;
+        }
+
+        estado.classList.add("hidden");
+        data.maquinas.forEach(maquina => tbody.appendChild(crearFilaDisponibilidad(maquina)));
+        if (data.totales) tbody.appendChild(crearFilaDisponibilidad(data.totales, true));
+      } catch (error) {
+        if (numeroSolicitud !== solicitudDisponibilidad) return;
+        estado.textContent = `Error al cargar disponibilidad: ${error.message}`;
+      }
+    }
+
+    function inicializarRangoAnalisis16GP() {
+      const desde = document.getElementById("analisis-16-gp-desde");
+      const hasta = document.getElementById("analisis-16-gp-hasta");
+      if (desde.value && hasta.value) return;
+
+      const rangoDesde = document.getElementById("fecha-desde").value;
+      const rangoHasta = document.getElementById("fecha-hasta").value;
+      const fechaSeleccionada = document.getElementById("fecha-selector").value;
+      desde.value = rangoDesde || fechaSeleccionada;
+      hasta.value = rangoHasta || fechaSeleccionada;
+    }
+
+    async function cargarAnalisis16GP() {
+      const desde = document.getElementById("analisis-16-gp-desde").value;
+      const hasta = document.getElementById("analisis-16-gp-hasta").value;
+      const estado = document.getElementById("analisis-16-gp-estado");
+      const graficos = document.getElementById("analisis-16-gp-graficos");
+      const solicitud = ++solicitudAnalisis16GP;
+      chartAnalisis16GPInstances.forEach(chart => chart.destroy());
+      chartAnalisis16GPInstances = [];
+      graficos.replaceChildren();
+      estado.classList.remove("hidden");
+
+      if (!desde || !hasta) {
+        estado.textContent = "Selecciona las fechas DESDE y HASTA.";
+        return;
+      }
+      if (desde > hasta) {
+        estado.textContent = "La fecha DESDE no puede ser posterior a HASTA.";
+        return;
+      }
+
+      estado.textContent = "Cargando paradas HPHI...";
+      try {
+        const params = new URLSearchParams({ desde, hasta });
+        const response = await fetch(`/api/analisis-16-gp/?${params.toString()}`);
+        const data = await response.json();
+        if (solicitud !== solicitudAnalisis16GP) return;
+        if (!response.ok || data.estado !== "ok") {
+          throw new Error(data.detail || "No se pudo consultar el análisis de paradas.");
+        }
+        if (!data.maquinas.length) {
+          estado.textContent = "No hay paradas HPHI de códigos 1 a 16 en el período seleccionado.";
+          return;
+        }
+
+        estado.textContent = `${data.maquinas.length} máquinas con paradas entre ${data.desde} y ${data.hasta}.`;
+        const grupos = [
+          { nombre: "MANO DE OBRA (5, 13)", codigos: [5, 13] },
+          { nombre: "PROGRAMACIÓN (4, 6, 15)", codigos: [4, 6, 15] },
+          { nombre: "COMEDOR (10, 11, 16)", codigos: [10, 11, 16] },
+          { nombre: "MANTENIMIENTO (1, 14)", codigos: [1, 14] },
+          { nombre: "SET UP (2)", codigos: [2] },
+          { nombre: "MÁQUINA (3, 8)", codigos: [3, 8] },
+          { nombre: "INSUMOS (7, 9, 12)", codigos: [7, 9, 12] }
+        ];
+        const ordenMaquinas = [
+          26, 1, 2, 278, 178, 78, 115, 213, 113, 35,
+          4, 3, 6, 218, 18, 109, 12, 112, 212, 80
+        ];
+        const maquinasOrdenadas = data.maquinas
+          .filter(maquina => ![117, 20].includes(Number(maquina.puesto)))
+          .sort((a, b) => {
+            const indiceA = ordenMaquinas.indexOf(Number(a.puesto));
+            const indiceB = ordenMaquinas.indexOf(Number(b.puesto));
+            return (indiceA < 0 ? ordenMaquinas.length : indiceA)
+              - (indiceB < 0 ? ordenMaquinas.length : indiceB);
+          });
+
+        maquinasOrdenadas.forEach(maquina => {
+          const tarjeta = document.createElement("article");
+          tarjeta.className = "analisis-16-gp-card bg-white rounded-xl shadow-sm border border-slate-200 p-4";
+          const encabezado = document.createElement("table");
+          encabezado.className = "analisis-16-gp-encabezado tabla-encabezado-print border-2 border-black w-full text-black bg-white mb-4";
+          const filaEncabezado = document.createElement("tr");
+          const celdaLogo = document.createElement("td");
+          celdaLogo.style.cssText = "width:25%;border-right:2px solid #000;padding:6px;";
+          const logo = document.createElement("img");
+          logo.className = "logo-angel-estrada";
+          logo.src = "/logo-angel-estrada.png";
+          logo.alt = "Angel Estrada";
+          celdaLogo.appendChild(logo);
+
+          const celdaTitulo = document.createElement("td");
+          celdaTitulo.style.cssText = "width:50%;border-right:2px solid #000;text-align:center;padding:6px;";
+          const titulo = document.createElement("h3");
+          titulo.style.cssText = "font-weight:900;font-size:22px;margin:0;text-transform:uppercase;";
+          titulo.textContent = `Paradas ${maquina.nombre} ${String(maquina.puesto).padStart(3, "0")}`;
+          celdaTitulo.appendChild(titulo);
+
+          const celdaRevision = document.createElement("td");
+          celdaRevision.style.cssText = "width:25%;padding:4px 8px;font-weight:800;font-size:11px;";
+          const crearLineaEncabezado = (texto, borde) => {
+            const linea = document.createElement("div");
+            linea.style.cssText = `display:flex;justify-content:space-between;${borde ? "border-bottom:1px solid #000;" : ""}padding:2px 0;`;
+            linea.textContent = texto;
+            return linea;
+          };
+          const fechaFin = new Date(`${data.hasta}T00:00:00`);
+          const mesAnio = fechaFin.toLocaleDateString("es-AR", { month: "long", year: "numeric" })
+            .replace(" de ", " ")
+            .toUpperCase();
+          celdaRevision.append(
+            crearLineaEncabezado("P01-F18", true),
+            crearLineaEncabezado("Rev 01", true),
+            crearLineaEncabezado(mesAnio, false)
+          );
+          filaEncabezado.append(celdaLogo, celdaTitulo, celdaRevision);
+          encabezado.appendChild(filaEncabezado);
+
+          const gruposOrdenados = grupos.map((grupo, indice) => ({
+            ...grupo,
+            indice,
+            horas: grupo.codigos.reduce(
+              (suma, codigo) => suma + (Number(maquina.horas_por_codigo[codigo - 1]) || 0),
+              0
+            )
+          })).sort((a, b) => b.horas - a.horas);
+          const horasPorGrupo = gruposOrdenados.map(grupo => grupo.horas);
+          const observacionesPorGrupo = maquina.observaciones_por_grupo || [];
+          const textoObservacion = observacion => {
+            const sectores = (observacion?.sectores || [])
+              .slice(0, 3)
+              .map(sector => `${sector.codigo} ${sector.descripcion}`)
+              .join(", ");
+            return [
+              observacion?.descripcion,
+              sectores ? `Sectores codificados: ${sectores}` : ""
+            ].filter(Boolean).join("; ");
+          };
+          const anotaciones = gruposOrdenados.slice(0, 2).flatMap((grupo, indice) => {
+            const observacion = observacionesPorGrupo[grupo.indice];
+            const descripcion = textoObservacion(observacion);
+            return grupo.horas > 0 && descripcion
+              ? [{ indice, descripcion }]
+              : [];
+          });
+          const total = horasPorGrupo.reduce((suma, horas) => suma + horas, 0);
+          const resumen = document.createElement("p");
+          resumen.className = "text-xs text-slate-500 mt-1";
+          resumen.textContent = `Total detenido: ${total.toFixed(2)} h`;
+          const periodo = document.createElement("p");
+          periodo.className = "analisis-16-gp-print-periodo hidden text-xs text-slate-500 mt-1";
+          periodo.textContent = `Período: ${data.desde} a ${data.hasta}`;
+          const contenedorCanvas = document.createElement("div");
+          contenedorCanvas.className = "analisis-16-gp-chart relative h-[390px] mt-3";
+          const canvas = document.createElement("canvas");
+          const textoAnotaciones = anotaciones.map(item => item.descripcion).join("; ");
+          canvas.setAttribute(
+            "aria-label",
+            `Horas de parada por grupo para ${maquina.nombre}${textoAnotaciones ? `. Observaciones principales: ${textoAnotaciones}` : ""}`
+          );
+          contenedorCanvas.appendChild(canvas);
+          const elementosTarjeta = [encabezado, resumen, periodo, contenedorCanvas];
+          const sectoresCatalogo = maquina.sectores_catalogo || [];
+          if (sectoresCatalogo.length) {
+            const sectoresObservados = new Set(
+              observacionesPorGrupo.flatMap(observacion => observacion?.sectores || [])
+                .map(sector => Number(sector.codigo))
+            );
+            const detallesSectores = document.createElement("details");
+            detallesSectores.className = "tipologia-sectores mt-3 rounded-lg border border-slate-200";
+            const tituloSectores = document.createElement("summary");
+            tituloSectores.className = "cursor-pointer px-3 py-2 text-sm font-semibold text-slate-700";
+            tituloSectores.textContent = `Tipología de sectores de la máquina (${sectoresObservados.size} con observaciones en el período)`;
+            const tablaSectores = document.createElement("table");
+            tablaSectores.className = "w-full border-collapse text-xs";
+            const encabezadoSectores = document.createElement("tr");
+            ["Código", "Denominación", "Período"].forEach(texto => {
+              const celda = document.createElement("th");
+              celda.className = "border-t border-slate-200 bg-slate-50 px-3 py-1 text-left font-semibold";
+              celda.textContent = texto;
+              encabezadoSectores.appendChild(celda);
+            });
+            const cuerpoSectores = document.createElement("tbody");
+            sectoresCatalogo.forEach(sector => {
+              const observado = sectoresObservados.has(Number(sector.codigo));
+              const fila = document.createElement("tr");
+              fila.className = observado ? "bg-emerald-50 font-semibold" : "";
+              [sector.codigo, sector.descripcion, observado ? "Con observaciones" : "Sin observaciones"]
+                .forEach(valor => {
+                  const celda = document.createElement("td");
+                  celda.className = "border-t border-slate-100 px-3 py-1";
+                  celda.textContent = String(valor);
+                  fila.appendChild(celda);
+                });
+              cuerpoSectores.appendChild(fila);
+            });
+            tablaSectores.append(encabezadoSectores, cuerpoSectores);
+            detallesSectores.append(tituloSectores, tablaSectores);
+            elementosTarjeta.push(detallesSectores);
+          }
+          tarjeta.append(...elementosTarjeta);
+          graficos.appendChild(tarjeta);
+
+          const valorMaximo = Math.max(...horasPorGrupo, 0) || 1;
+          const coloresBarras = horasPorGrupo.map((_, indice) =>
+            indice < 2 ? "#dc2626" : "#2563eb"
+          );
+          chartAnalisis16GPInstances.push(new Chart(canvas.getContext("2d"), {
+            type: "bar",
+            data: {
+              labels: gruposOrdenados.map(grupo => grupo.nombre),
+              datasets: [{
+                label: "Horas detenidas",
+                data: horasPorGrupo,
+                backgroundColor: coloresBarras,
+                borderColor: coloresBarras,
+                borderRadius: 6,
+                borderSkipped: false,
+                borderWidth: 1
+              }]
+            },
+            plugins: [ChartDataLabels, indicadorMejorParadasPlugin, anotacionesParadasPlugin],
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+              layout: { padding: { top: 94 } },
+              plugins: {
+                legend: { display: false },
+                "anotaciones-paradas": { items: anotaciones },
+                datalabels: {
+                  display: context => Number(context.dataset.data[context.dataIndex] || 0) > 0,
+                  anchor: "end",
+                  align: "top",
+                  formatter: horas => `${Number(horas).toFixed(1)} h`,
+                  color: "#334155",
+                  font: { size: 9, weight: "bold" }
+                },
+                tooltip: {
+                  callbacks: {
+                    label: context => {
+                      const valor = Number(context.raw) || 0;
+                      const porcentaje = total > 0 ? ((valor / total) * 100).toFixed(1) : "0.0";
+                      return `${context.label}: ${valor.toFixed(2)} h (${porcentaje}%)`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  suggestedMax: Math.max(valorMaximo * 1.2, 2),
+                  title: { display: true, text: "Horas detenidas" },
+                  grid: { color: "#e2e8f0" }
+                },
+                x: {
+                  grid: { display: false },
+                  ticks: {
+                    minRotation: 45,
+                    maxRotation: 45,
+                    font: { size: 9, weight: "bold" }
+                  }
+                }
+              }
+            }
+          }));
+        });
+      } catch (error) {
+        if (solicitud !== solicitudAnalisis16GP) return;
+        console.error("Error al cargar Análisis 16 GP:", error);
+        estado.textContent = `No se pudo cargar el análisis: ${error.message}`;
+      }
+    }
+
+    function imprimirAnalisis16GP() {
+      if (!chartAnalisis16GPInstances.length) {
+        const estado = document.getElementById("analisis-16-gp-estado");
+        estado.classList.remove("hidden");
+        estado.textContent = "No hay gráficos para imprimir. Consulta un período con datos.";
+        return;
+      }
+
+      document.body.classList.add("imprimir-analisis-16-gp");
+      requestAnimationFrame(() => {
+        chartAnalisis16GPInstances.forEach(chart => {
+          chart.resize(1100, 600);
+          chart.update("none");
+        });
+        window.print();
+      });
+    }
+
+    async function cargarMaquinasBI() {
+      const tbody = document.getElementById("tabla-maquinas-bi");
+      const contador = document.getElementById("bi-cantidad-maquinas");
+      const selectorMes = document.getElementById("mes-bi-selector");
+      const mesQuery = selectorMes.value ? `?mes=${encodeURIComponent(selectorMes.value)}` : "";
+      tbody.innerHTML = `<tr><td colspan="3" class="px-5 py-4 text-slate-500">Cargando máquinas…</td></tr>`;
+      contador.textContent = "";
+      try {
+        const response = await fetch(`/api/baja-improductividad/maquinas/${mesQuery}`);
+        const data = await response.json();
+        if (!response.ok || data.estado !== "ok") {
+          throw new Error(data.detail || "No se pudieron consultar las máquinas.");
+        }
+        if (data.mes && !selectorMes.value) selectorMes.value = data.mes;
+        tbody.innerHTML = "";
+        if (!data.maquinas.length) {
+          tbody.innerHTML = `<tr><td colspan="3" class="px-5 py-4 text-slate-500">Todavía no hay máquinas registradas en reportes SAP.</td></tr>`;
+          return;
+        }
+        data.maquinas.forEach(maquina => {
+          const fila = document.createElement("tr");
+          fila.className = "hover:bg-slate-50";
+          const celda = document.createElement("td");
+          celda.className = "px-5 py-3 font-semibold text-slate-800";
+          celda.textContent = `${maquina.nombre} (${String(maquina.puesto).padStart(3, "0")})`;
+          const celdaEficiencia = document.createElement("td");
+          celdaEficiencia.className = "px-5 py-3 text-right font-mono font-bold text-slate-700";
+          celdaEficiencia.textContent = maquina.eficiencia === null
+            ? "—"
+            : `${Number(maquina.eficiencia).toFixed(2)}%`;
+          const celdaBI = document.createElement("td");
+          celdaBI.className = "px-5 py-3 text-right font-mono font-bold text-slate-700";
+          const eficiencia = Number(maquina.eficiencia);
+          const valorBI = (eficiencia / 100 - 0.46) / 0.8;
+          celdaBI.textContent = maquina.eficiencia === null || !Number.isFinite(eficiencia) || valorBI < 0
+            ? ""
+            : valorBI.toFixed(2).replace(".", ",");
+          fila.append(celda, celdaEficiencia, celdaBI);
+          tbody.appendChild(fila);
+        });
+        contador.textContent = `${data.maquinas.length} máquinas`;
+      } catch (error) {
+        console.error("Error al cargar máquinas para B.I.:", error);
+        tbody.innerHTML = `<tr><td colspan="3" class="px-5 py-4 text-red-600">Error al cargar máquinas: ${error.message}</td></tr>`;
+      }
+    }
+
+    async function cargarGraficoMensual() {
+      const solicitud = ++solicitudGraficos;
+      const estado = document.getElementById('estado-graficos');
+      estado.classList.add('hidden');
+      try {
+        const selectorMes = document.getElementById('mes-graficos-selector');
+        const consultaMaquinas = selectorMes.value
+          ? `?mes=${encodeURIComponent(selectorMes.value)}`
+          : '';
+        const [resGeneral, resDisponibilidad, resParadas, resMaquinas, resStockRepuestos] = await Promise.all([
+          fetch('/api/graficos/eficiencia-mensual/'),
+          fetch('/api/graficos/disponibilidad-mensual/'),
+          fetch(`/api/graficos/paradas-mensuales/${consultaMaquinas}`),
+          fetch(`/api/graficos/eficiencia-maquinas/${consultaMaquinas}`),
+          fetch('/api/graficos/confiabilidad-stock-repuestos/')
+        ]);
+        if (!resGeneral.ok || !resDisponibilidad.ok || !resParadas.ok || !resMaquinas.ok || !resStockRepuestos.ok) {
+          throw new Error(`Error al consultar los gráficos (HTTP ${resGeneral.status}/${resDisponibilidad.status}/${resParadas.status}/${resMaquinas.status}/${resStockRepuestos.status}).`);
+        }
+        const [dataGeneral, dataDisponibilidad, dataParadas, dataMaquinas, dataStockRepuestos] = await Promise.all([
+          resGeneral.json(),
+          resDisponibilidad.json(),
+          resParadas.json(),
+          resMaquinas.json(),
+          resStockRepuestos.json()
+        ]);
+        if (solicitud !== solicitudGraficos) return;
+        if (dataGeneral.estado === "ok") renderGraficoMensual(dataGeneral);
+        else if (chartMensualInstance) {
+          chartMensualInstance.destroy();
+          chartMensualInstance = null;
+        }
+        if (dataDisponibilidad.estado === "ok") renderGraficoMensual(dataDisponibilidad, "disponibilidad");
+        else if (chartDisponibilidadMensualInstance) {
+          chartDisponibilidadMensualInstance.destroy();
+          chartDisponibilidadMensualInstance = null;
+        }
+        if (dataStockRepuestos.estado === "ok") renderGraficoMensual(dataStockRepuestos, "stock");
+        else if (chartStockRepuestosInstance) {
+          chartStockRepuestosInstance.destroy();
+          chartStockRepuestosInstance = null;
+        }
+        renderGraficoParadas(dataParadas);
+        if (dataMaquinas.mes_seleccionado && !selectorMes.value) {
+          selectorMes.value = dataMaquinas.mes_seleccionado;
+        }
+        renderGraficosMaquinas(dataMaquinas);
+        if (dataGeneral.estado !== "ok" && dataDisponibilidad.estado !== "ok" && dataParadas.estado !== "ok" && dataMaquinas.estado !== "ok" && dataStockRepuestos.estado !== "ok") {
+          estado.textContent = 'No hay datos disponibles para generar los gráficos.';
+          estado.classList.remove('hidden');
+        }
+      } catch (e) {
+        if (solicitud !== solicitudGraficos) return;
+        console.error("Error al cargar datos del gráfico:", e);
+        estado.textContent = `No se pudieron cargar los gráficos: ${e.message}`;
+        estado.classList.remove('hidden');
+      }
+    }
+
+    function renderGraficoParadas(data) {
+      chartCausasParadasInstances.forEach(chart => chart.destroy());
+      chartCausasParadasInstances = [];
+      const treemap = document.getElementById('treemap-paradas');
+      const causas = document.getElementById('causas-paradas');
+      treemap.innerHTML = '';
+      causas.innerHTML = '';
+
+      if (!data || data.estado !== 'ok') {
+        treemap.textContent = 'No hay paradas registradas para el período seleccionado.';
+        causas.textContent = 'No hay causas disponibles para mostrar.';
+        document.getElementById('paradas-mes-label').textContent = data?.mes || 'General Planta La Rioja';
+        return;
+      }
+
+      document.getElementById('paradas-mes-label').textContent = data.mes;
+      dibujarTreemapParadas(treemap, data.maquinas);
+      dibujarCausasParadas(causas, data.maquinas_top);
+    }
+
+    function dibujarTreemapParadas(contenedor, maquinas) {
+      const ancho = 800;
+      const alto = 470;
+      const datos = maquinas
+        .filter(maquina => Number.isFinite(maquina.horas_totales) && maquina.horas_totales > 0)
+        .sort((a, b) => b.horas_totales - a.horas_totales);
+      const repeticionesNombre = datos.reduce((repeticiones, maquina) => {
+        repeticiones.set(maquina.nombre, (repeticiones.get(maquina.nombre) || 0) + 1);
+        return repeticiones;
+      }, new Map());
+
+      if (!datos.length) {
+        contenedor.textContent = 'No hay horas de paradas para mostrar.';
+        return;
+      }
+
+      const totalHoras = datos.reduce((total, maquina) => total + maquina.horas_totales, 0);
+      const rectangulos = datos.map(maquina => ({
+        maquina,
+        area: maquina.horas_totales / totalHoras * ancho * alto
+      }));
+      const colocados = [];
+      const libre = { x: 0, y: 0, width: ancho, height: alto };
+      const peorProporcion = (fila, lado) => {
+        if (!fila.length || lado <= 0) return Infinity;
+        const areas = fila.map(item => item.area);
+        const suma = areas.reduce((total, area) => total + area, 0);
+        const minima = Math.min(...areas);
+        const maxima = Math.max(...areas);
+        return Math.max((lado ** 2 * maxima) / (suma ** 2), (suma ** 2) / (lado ** 2 * minima));
+      };
+
+      while (rectangulos.length && libre.width > 0 && libre.height > 0) {
+        const fila = [rectangulos.shift()];
+        const lado = Math.min(libre.width, libre.height);
+        while (
+          rectangulos.length
+          && peorProporcion([...fila, rectangulos[0]], lado) <= peorProporcion(fila, lado)
+        ) {
+          fila.push(rectangulos.shift());
+        }
+
+        const areaFila = fila.reduce((total, item) => total + item.area, 0);
+        if (libre.width >= libre.height) {
+          const anchoFila = areaFila / libre.height;
+          let y = libre.y;
+          fila.forEach(item => {
+            const altoRect = item.area / anchoFila;
+            colocados.push({ ...item, x: libre.x, y, width: anchoFila, height: altoRect });
+            y += altoRect;
+          });
+          libre.x += anchoFila;
+          libre.width -= anchoFila;
+        } else {
+          const altoFila = areaFila / libre.width;
+          let x = libre.x;
+          fila.forEach(item => {
+            const anchoRect = item.area / altoFila;
+            colocados.push({ ...item, x, y: libre.y, width: anchoRect, height: altoFila });
+            x += anchoRect;
+          });
+          libre.y += altoFila;
+          libre.height -= altoFila;
+        }
+      }
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', `0 0 ${ancho} ${alto}`);
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', 'Horas de parada de códigos 1 y 14 por máquina');
+      svg.setAttribute('class', 'w-full h-full');
+      const colores = ['#4472c4', '#5b9bd5', '#ffbf00', '#ed7d31', '#70ad47', '#264478', '#9e480e', '#636363', '#255e91'];
+
+      colocados.forEach(({ maquina, x, y, width, height }, indice) => {
+        const grupo = document.createElementNS(svg.namespaceURI, 'g');
+        const caja = document.createElementNS(svg.namespaceURI, 'rect');
+        caja.setAttribute('x', String(x + 1));
+        caja.setAttribute('y', String(y + 1));
+        caja.setAttribute('width', String(Math.max(0, width - 2)));
+        caja.setAttribute('height', String(Math.max(0, height - 2)));
+        caja.setAttribute('fill', colores[indice % colores.length]);
+        caja.setAttribute('stroke', '#ffffff');
+        caja.setAttribute('stroke-width', '2');
+        const detalle = document.createElementNS(svg.namespaceURI, 'title');
+        detalle.textContent = `${maquina.nombre} (${maquina.puesto}): ${maquina.horas_totales.toFixed(2)} h (Cód. 1: ${maquina.horas_codigo_1.toFixed(2)} h; Cód. 14: ${maquina.horas_codigo_14.toFixed(2)} h)`;
+        caja.appendChild(detalle);
+        grupo.appendChild(caja);
+
+        if (width > 72 && height > 26) {
+          const texto = document.createElementNS(svg.namespaceURI, 'text');
+          const tamano = Math.max(11, Math.min(19, Math.min(width / 9, height / 3)));
+          const xTexto = x + 7;
+          const etiquetaMaxima = Math.max(4, Math.floor((width - 14) / (tamano * 0.57)));
+          const nombreCompleto = repeticionesNombre.get(maquina.nombre) > 1
+            ? `${maquina.nombre} ${maquina.puesto}`
+            : maquina.nombre;
+          const nombre = nombreCompleto.length > etiquetaMaxima
+            ? `${nombreCompleto.slice(0, etiquetaMaxima - 1)}…`
+            : nombreCompleto;
+          texto.setAttribute('x', String(xTexto));
+          texto.setAttribute('y', String(y + height - (height > 48 ? tamano * 1.8 : 7)));
+          texto.setAttribute('fill', '#ffffff');
+          texto.setAttribute('font-size', String(tamano));
+          texto.setAttribute('font-weight', '700');
+          texto.textContent = `${nombre}, ${maquina.horas_totales.toFixed(1)} h`;
+          grupo.appendChild(texto);
+        }
+        svg.appendChild(grupo);
+      });
+
+      contenedor.appendChild(svg);
+    }
+
+    function dibujarCausasParadas(contenedor, maquinas) {
+      if (!maquinas || !maquinas.length) {
+        contenedor.textContent = 'No hay máquinas con paradas en el período seleccionado.';
+        return;
+      }
+      const colores = ['#4472c4', '#ed7d31', '#a5a5a5', '#ffbf00'];
+
+      maquinas.forEach((maquina, indiceMaquina) => {
+        const panel = document.createElement('article');
+        panel.className = 'causa-parada-panel grid grid-cols-[116px_1fr] items-center gap-2 border-b border-slate-200 last:border-b-0 min-h-0';
+
+        const ladoGrafico = document.createElement('div');
+        ladoGrafico.className = 'causa-parada-left flex flex-col items-center min-w-0';
+        const titulo = document.createElement('h4');
+        titulo.className = 'causa-parada-title text-xs font-extrabold text-slate-700 text-center leading-tight';
+        titulo.textContent = `${maquina.nombre} ${maquina.puesto} (${maquina.horas_totales.toFixed(1)} h)`;
+        const lienzoContenedor = document.createElement('div');
+        lienzoContenedor.className = 'causa-parada-donut';
+        lienzoContenedor.style.cssText = 'position:relative;width:108px;height:92px;';
+        const lienzo = document.createElement('canvas');
+        lienzo.setAttribute('aria-label', `Causas de paradas de ${maquina.nombre}`);
+        lienzoContenedor.appendChild(lienzo);
+        ladoGrafico.append(titulo, lienzoContenedor);
+
+        const leyenda = document.createElement('ul');
+        leyenda.className = 'causa-parada-legend space-y-1 text-[11px] leading-tight';
+        maquina.causas.forEach((causa, indiceCausa) => {
+          const item = document.createElement('li');
+          item.className = 'flex items-start gap-1';
+          const marca = document.createElement('span');
+          marca.className = 'mt-0.5 h-2.5 w-2.5 shrink-0 rounded-sm';
+          marca.style.backgroundColor = colores[indiceCausa % colores.length];
+          const texto = document.createElement('span');
+          texto.className = 'causa-parada-label min-w-0 flex-1 text-slate-700';
+          texto.textContent = causa.causa;
+          texto.title = `${causa.causa}: ${causa.horas.toFixed(2)} h`;
+          const impacto = document.createElement('span');
+          impacto.className = 'shrink-0 font-semibold text-slate-700';
+          impacto.textContent = `${causa.impacto_pct.toFixed(1)}%`;
+          item.append(marca, texto, impacto);
+          leyenda.appendChild(item);
+        });
+        panel.append(ladoGrafico, leyenda);
+        contenedor.appendChild(panel);
+
+        chartCausasParadasInstances.push(new Chart(lienzo.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: maquina.causas.map(causa => causa.causa),
+            datasets: [{
+              data: maquina.causas.map(causa => causa.horas),
+              backgroundColor: maquina.causas.map((_, indice) => colores[indice % colores.length]),
+              borderColor: '#ffffff',
+              borderWidth: 2
+            }]
+          },
+          plugins: [ChartDataLabels],
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            cutout: '58%',
+            plugins: {
+              legend: { display: false },
+              datalabels: {
+                display: contexto => maquina.causas[contexto.dataIndex].impacto_pct >= 8,
+                color: '#ffffff',
+                font: { weight: 'bold', size: 9 },
+                formatter: (_, contexto) => `${maquina.causas[contexto.dataIndex].impacto_pct.toFixed(0)}%`
+              },
+              tooltip: {
+                callbacks: {
+                  label: contexto => {
+                    const causa = maquina.causas[contexto.dataIndex];
+                    return `${causa.causa}: ${causa.horas.toFixed(2)} h (${causa.impacto_pct.toFixed(1)}%)`;
+                  }
+                }
+              }
+            }
+          }
+        }));
+      });
+    }
+
+    function renderGraficosMaquinas(data) {
+      const contenedor = document.getElementById('graficos-individuales');
+      chartMaquinasInstances.forEach(chart => chart.destroy());
+      chartMaquinasInstances = [];
+      contenedor.innerHTML = '';
+
+      if (!data || data.estado !== 'ok' || !data.maquinas.length) return;
+      const maquinasVisibles = data.maquinas.filter(maquina => Number(maquina.puesto) !== 20);
+
+      const cantidadEjercicios = data.ejercicios.length;
+      const cantidadDias = data.dias_labels.length;
+      const labels = [...data.ejercicios, ...data.dias_labels.map(String), 'OBJETIVO\nANUAL'];
+
+      maquinasVisibles.forEach(maquina => {
+        const tarjeta = document.createElement('section');
+        tarjeta.className = 'grafico-maquina-card bg-white rounded-xl shadow-sm border border-slate-200 p-6 print-card';
+
+        const encabezado = document.createElement('table');
+        encabezado.className = 'tabla-encabezado-print border-2 border-black w-full text-black bg-white mb-4';
+        encabezado.innerHTML = `
+          <tr>
+            <td style="width: 25%; border-right: 2px solid #000; padding: 6px;">
+              <img class="logo-angel-estrada" src="/logo-angel-estrada.png" alt="Angel Estrada">
+            </td>
+            <td style="width: 50%; border-right: 2px solid #000; text-align: center; padding: 6px;">
+              <h2 style="font-weight: 900; font-size: 22px; margin: 0; text-transform: uppercase;">Eficiencia ${maquina.nombre} ${String(maquina.puesto).padStart(3, '0')}</h2>
+            </td>
+            <td style="width: 25%; padding: 4px 8px; font-weight: 800; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding-bottom: 2px;"><span>P01-F18</span></div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #000; padding: 2px 0;"><span>Rev 01</span></div>
+              <div style="display: flex; justify-content: space-between; padding-top: 2px;"><span>${data.mes}</span></div>
+            </td>
+          </tr>
+        `;
+
+        const contenedorGrafico = document.createElement('div');
+        contenedorGrafico.className = 'grafico-mensual-contenedor';
+        contenedorGrafico.style.cssText = 'position: relative; width: 100%; height: 500px;';
+        const canvas = document.createElement('canvas');
+        contenedorGrafico.appendChild(canvas);
+        tarjeta.append(encabezado, contenedorGrafico);
+        contenedor.appendChild(tarjeta);
+
+        const objetivo = Number(maquina.objetivo_anual);
+        const objetivoValido = Number.isFinite(objetivo) && objetivo > 0;
+        const valores = [
+          ...maquina.acumulados.filter(valor => valor !== null),
+          ...maquina.eficiencia_diaria.filter(valor => valor !== null),
+          ...(objetivoValido ? [objetivo] : [])
+        ];
+        const menorValor = valores.length ? Math.min(...valores) : 0;
+        const mayorValor = valores.length ? Math.max(...valores) : 50;
+        const escalaMinima = Math.max(0, Math.floor(menorValor / 5) * 5 - 5);
+        const escalaMaxima = Math.max(50, Math.ceil((mayorValor + 5) / 5) * 5);
+        const datosBarras = [
+          ...maquina.acumulados,
+          ...Array(cantidadDias).fill(null),
+          null
+        ];
+        const datosObjetivo = [
+          ...Array(cantidadEjercicios + cantidadDias).fill(null),
+          objetivoValido ? objetivo : null
+        ];
+        const datosDiarios = [
+          ...Array(cantidadEjercicios).fill(null),
+          ...maquina.eficiencia_diaria,
+          null
+        ];
+        const lineaObjetivo = [
+          ...Array(cantidadEjercicios).fill(null),
+          ...Array(cantidadDias).fill(objetivoValido ? objetivo : null),
+          null
+        ];
+
+        const separadorPlugin = {
+          id: `separador-${maquina.puesto}`,
+          beforeDraw(chart) {
+            const { ctx, chartArea, scales: { x } } = chart;
+            const bordeAnualDiario = (
+              x.getPixelForTick(cantidadEjercicios - 1)
+              + x.getPixelForTick(cantidadEjercicios)
+            ) / 2;
+
+            ctx.save();
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillRect(chartArea.left, chartArea.top, bordeAnualDiario - chartArea.left, chartArea.bottom - chartArea.top);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(bordeAnualDiario, chartArea.top, chartArea.right - bordeAnualDiario, chartArea.bottom - chartArea.top);
+            ctx.restore();
+          },
+          beforeDatasetsDraw(chart) {
+            const { ctx, chartArea, scales: { x } } = chart;
+            const separaciones = [
+              (x.getPixelForTick(cantidadEjercicios - 1) + x.getPixelForTick(cantidadEjercicios)) / 2,
+              (x.getPixelForTick(cantidadEjercicios + cantidadDias - 1) + x.getPixelForTick(cantidadEjercicios + cantidadDias)) / 2
+            ];
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.setLineDash([7, 5]);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#334155';
+            separaciones.forEach(xPos => {
+              ctx.moveTo(xPos, chartArea.top);
+              ctx.lineTo(xPos, chartArea.bottom);
+            });
+            ctx.stroke();
+            ctx.restore();
+          }
+        };
+
+        chartMaquinasInstances.push(new Chart(canvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: 'Eficiencia acumulada por ejercicio',
+                type: 'bar',
+                data: datosBarras,
+                backgroundColor: labels.map((_, index) => (
+                  index < cantidadEjercicios
+                    ? (index === cantidadEjercicios - 1 ? '#00b050' : '#2f5597')
+                    : null
+                )),
+                barPercentage: 0.6,
+                barThickness: 13.5,
+                datalabels: {
+                  align: 'top',
+                  anchor: 'end',
+                  formatter: valor => valor === null ? '' : `${valor.toFixed(2)}%`,
+                  font: { weight: 'bold', size: 10 },
+                  color: '#000'
+                }
+              },
+              {
+                label: 'Objetivo anual',
+                type: 'bar',
+                data: datosObjetivo,
+                backgroundColor: '#ffc000',
+                barPercentage: 0.6,
+                barThickness: 13.5,
+                datalabels: {
+                  align: 'top',
+                  anchor: 'end',
+                  formatter: valor => valor === null ? '' : `${valor.toFixed(2)}%`,
+                  font: { weight: 'bold', size: 10 },
+                  color: '#000'
+                }
+              },
+              {
+                label: `Eficiencia diaria ${data.mes}`,
+                type: 'bar',
+                data: datosDiarios,
+                backgroundColor: '#00b050',
+                barPercentage: 0.6,
+                barThickness: 13.5,
+                datalabels: {
+                  align: 'top',
+                  anchor: 'end',
+                  formatter: valor => valor === null ? '' : `${valor.toFixed(1)}%`,
+                  font: { weight: 'bold', size: 8 },
+                  color: '#000'
+                }
+              },
+              {
+                label: 'Objetivo anual',
+                type: 'line',
+                data: lineaObjetivo,
+                borderColor: '#8faadc',
+                borderWidth: 3,
+                borderDash: [8, 6],
+                pointRadius: 0,
+                datalabels: { display: false }
+              }
+            ]
+          },
+          plugins: [ChartDataLabels, separadorPlugin, indicadorMejorPlugin],
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            layout: { padding: { top: 44 } },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: contexto => contexto.raw === null
+                    ? `${contexto.dataset.label}: -`
+                    : `${contexto.dataset.label}: ${contexto.raw.toFixed(2)}%`
+                }
+              }
+            },
+            scales: {
+              y: {
+                min: escalaMinima,
+                max: escalaMaxima,
+                ticks: {
+                  stepSize: 5,
+                  callback: valor => `${Number(valor).toFixed(2)}%`
+                },
+                grid: { color: '#e2e8f0' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: {
+                  autoSkip: false,
+                  maxRotation: 0,
+                  minRotation: 0,
+                  font: { weight: 'bold', size: 8 }
+                }
+              }
+            }
+          }
+        }));
+      });
+    }
+
+    function renderGraficoMensual(data, tipoGrafico = 'eficiencia') {
+      const disponibilidad = tipoGrafico === 'disponibilidad';
+      const stockRepuestos = tipoGrafico === 'stock';
+      const campoIndicador = disponibilidad
+        ? 'disponibilidad'
+        : stockRepuestos ? 'confiabilidad' : 'eficiencia';
+      const objetivo = disponibilidad ? 98.0 : data.objetivo_anual;
+      const canvasId = disponibilidad
+        ? 'chartDisponibilidadMensual'
+        : stockRepuestos ? 'chartConfiabilidadStockRepuestos' : 'chartEficienciaMensual';
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const chartExistente = disponibilidad
+        ? chartDisponibilidadMensualInstance
+        : stockRepuestos ? chartStockRepuestosInstance : chartMensualInstance;
+      if (chartExistente) {
+        chartExistente.destroy();
+      }
+
+      const labelsAcum = data.acumulados_4_ejercicios.map(item => item.ejercicio);
+      const labelsMeses = data.meses_labels;
+      const labelsX = [...labelsAcum, ...labelsMeses, "OBJETIVO\nANUAL"];
+
+      const dataBarrasAcum = labelsX.map((_, idx) => {
+        if (idx < labelsAcum.length) {
+          return data.acumulados_4_ejercicios[idx][campoIndicador];
+        }
+        return null;
+      });
+
+      const dataBarraObjetivo = labelsX.map((_, idx) => {
+        if (idx === labelsX.length - 1) {
+          return objetivo;
+        }
+        return null;
+      });
+
+      const dataLineaActual = labelsX.map((_, idx) => {
+        if (idx >= labelsAcum.length && idx < labelsAcum.length + 12) {
+          const mIdx = idx - labelsAcum.length;
+          return data.mensual_actual[mIdx];
+        }
+        return null;
+      });
+
+      const dataLineaAnterior = labelsX.map((_, idx) => {
+        if (idx >= labelsAcum.length && idx < labelsAcum.length + 12) {
+          const mIdx = idx - labelsAcum.length;
+          return data.mensual_anterior[mIdx];
+        }
+        return null;
+      });
+
+      const dataLineaMeta = labelsX.map((_, idx) => {
+        if (idx >= labelsAcum.length && idx < labelsAcum.length + 12) {
+          return objetivo;
+        }
+        return null;
+      });
+      const valoresDisponibilidad = [
+        ...dataBarrasAcum,
+        ...dataLineaActual,
+        ...dataLineaAnterior
+      ].filter(valor => Number.isFinite(valor));
+      const minimoDisponibilidad = valoresDisponibilidad.length
+        ? Math.min(80, Math.floor(Math.min(...valoresDisponibilidad) / 5) * 5)
+        : 80;
+
+      const separadorEjerciciosPlugin = {
+        id: `separador-ejercicios-${canvasId}`,
+        beforeDraw(chart) {
+          const { ctx, chartArea, scales: { x } } = chart;
+          const puntoSeparacion = (x.getPixelForTick(labelsAcum.length - 1) + x.getPixelForTick(labelsAcum.length)) / 2;
+
+          ctx.save();
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(chartArea.left, chartArea.top, puntoSeparacion - chartArea.left, chartArea.bottom - chartArea.top);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(puntoSeparacion, chartArea.top, chartArea.right - puntoSeparacion, chartArea.bottom - chartArea.top);
+          ctx.restore();
+        },
+        beforeDatasetsDraw(chart) {
+          const { ctx, chartArea, scales: { x } } = chart;
+          const puntoSeparacion = (x.getPixelForTick(labelsAcum.length - 1) + x.getPixelForTick(labelsAcum.length)) / 2;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.setLineDash([7, 5]);
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#334155';
+          ctx.moveTo(puntoSeparacion, chartArea.top);
+          ctx.lineTo(puntoSeparacion, chartArea.bottom);
+          ctx.stroke();
+          ctx.restore();
+        }
+      };
+
+      const nuevoGrafico = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labelsX,
+          datasets: [
+            {
+              label: 'Acumulado Ejercicio',
+              type: 'bar',
+              data: dataBarrasAcum,
+              backgroundColor: labelsAcum.map((_, i) => i === labelsAcum.length - 1 ? '#00b050' : '#2f5597'),
+              barPercentage: 0.6,
+              barThickness: 13.5,
+              datalabels: {
+                align: 'top',
+                anchor: 'end',
+                formatter: (val) => Number.isFinite(val) ? val.toFixed(2) + '%' : '',
+                font: { weight: 'bold', size: 11 },
+                color: '#000'
+              }
+            },
+            {
+              label: 'Objetivo Anual',
+              type: 'bar',
+              data: dataBarraObjetivo,
+              backgroundColor: '#ffc000',
+              barPercentage: 0.6,
+              barThickness: 13.5,
+              datalabels: {
+                align: 'top',
+                anchor: 'end',
+                formatter: (val) => Number.isFinite(val) ? val.toFixed(2) + '%' : '',
+                font: { weight: 'bold', size: 11 },
+                color: '#000'
+              }
+            },
+            {
+              label: 'Ejercicio Actual',
+              type: 'line',
+              data: dataLineaActual,
+              borderColor: '#00b050',
+              backgroundColor: '#00b050',
+              borderWidth: 3,
+              pointStyle: 'rect',
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              spanGaps: false,
+              datalabels: {
+                align: 'top',
+                anchor: 'end',
+                formatter: (val) => Number.isFinite(val) ? val.toFixed(1) + '%' : '',
+                font: { weight: 'bold', size: 11 },
+                color: '#000'
+              }
+            },
+            {
+              label: 'Ejercicio Anterior',
+              type: 'line',
+              data: dataLineaAnterior,
+              borderColor: '#ed7d31',
+              backgroundColor: '#ed7d31',
+              borderWidth: 3,
+              pointStyle: 'triangle',
+              pointRadius: 7,
+              pointHoverRadius: 9,
+              spanGaps: true,
+              datalabels: {
+                align: 'bottom',
+                anchor: 'start',
+                formatter: (val) => Number.isFinite(val) ? val.toFixed(1) + '%' : '',
+                font: { weight: 'bold', size: 11 },
+                color: '#000'
+              }
+            },
+            {
+              label: 'Línea Objetivo',
+              type: 'line',
+              data: dataLineaMeta,
+              borderColor: '#8faadc',
+              borderWidth: 3,
+              borderDash: [8, 6],
+              pointStyle: 'cross',
+              pointRadius: 5,
+              datalabels: { display: false }
+            }
+          ]
+        },
+        plugins: [ChartDataLabels, separadorEjerciciosPlugin, indicadorMejorPlugin],
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          layout: { padding: { top: 44 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${Number.isFinite(ctx.raw) ? ctx.raw.toFixed(2) + '%' : '-'}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: stockRepuestos ? 0 : disponibilidad ? minimoDisponibilidad : 25,
+              max: stockRepuestos ? 100 : disponibilidad ? 102 : 53,
+              ticks: {
+                stepSize: stockRepuestos ? 10 : disponibilidad ? 2 : 5,
+                callback: (val) => Number(val).toFixed(2) + '%'
+              },
+              grid: { color: '#e2e8f0' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { weight: 'bold', size: 10 } }
+            }
+          }
+        }
+      });
+      if (disponibilidad) chartDisponibilidadMensualInstance = nuevoGrafico;
+      else if (stockRepuestos) chartStockRepuestosInstance = nuevoGrafico;
+      else chartMensualInstance = nuevoGrafico;
+    }
+
+    async function cargarAcumulado() {
+      const desde = document.getElementById("fecha-desde").value;
+      const hasta = document.getElementById("fecha-hasta").value;
+
+      if (!desde || !hasta) return;
+
+      try {
+        const res = await fetch(`/acumulado/?desde=${desde}&hasta=${hasta}`);
+        const data = await res.json();
+        renderTablaAcumulado(data);
+      } catch (e) {
+        console.error("Error al cargar acumulado:", e);
+      }
+    }
+
+    function calcularSemaforoClass(acumulado, objAnual, resAnterior) {
+      const ac = parseFloat(acumulado) || 0;
+      const obj = parseFloat(objAnual) || 0;
+      const res = parseFloat(resAnterior) || 0;
+
+      if (ac < res) return 'bg-red-500 text-white font-bold';
+      if (obj > 0 && ac >= obj) return 'bg-emerald-500 text-white font-bold';
+      if (obj === 0 && ac >= res && res > 0) return 'bg-emerald-500 text-white font-bold';
+
+      return 'bg-yellow-400 text-slate-900 font-bold';
+    }
+
+    function calcularColorPerdidas(valor, minimo, maximo) {
+      const verde = [34, 197, 94];
+      const amarillo = [250, 204, 21];
+      const rojo = [239, 68, 68];
+      const proporcion = maximo === minimo
+        ? 0.5
+        : Math.max(0, Math.min(1, (valor - minimo) / (maximo - minimo)));
+      const inicio = proporcion <= 0.5 ? verde : amarillo;
+      const fin = proporcion <= 0.5 ? amarillo : rojo;
+      const tramo = proporcion <= 0.5 ? proporcion * 2 : (proporcion - 0.5) * 2;
+      const rgb = inicio.map((canal, indice) =>
+        Math.round(canal + (fin[indice] - canal) * tramo)
+      );
+      return `rgb(${rgb.join(",")})`;
+    }
+
+    function renderTablaAcumulado(data) {
+      const tbody = document.getElementById("tabla-body-acumulado");
+      tbody.innerHTML = "";
+
+      document.getElementById("hdr-obj-anual").value = data?.planta_objetivo_anual ?? 0;
+      document.getElementById("hdr-res-anterior").value = data?.planta_resultado_anterior ?? 0;
+      document.getElementById("hdr-acumulado").innerText = `${Number(data?.planta_acumulado || 0).toFixed(1)}%`;
+      document.getElementById("hdr-objetivo-mes-kg").value = data?.planta_objetivo_mes_kg ?? 0;
+
+      if (!data || (!data.maquinas_pt.length && !data.maquinas_se.length && !data.maquinas_reproceso.length)) {
+        tbody.innerHTML = `<tr><td colspan="15" class="p-4 text-center text-slate-400 italic">No existen registros acumulados para el rango de fechas seleccionado.</td></tr>`;
+        return;
+      }
+
+      const valoresPerdidas = [
+        ...data.maquinas_pt,
+        ...data.maquinas_se,
+        ...data.maquinas_reproceso.map(item => ({ ...item, perdidas_pct: 0 }))
+      ]
+        .map(item => Number(item.perdidas_pct))
+        .filter(Number.isFinite);
+      const minimoPerdidas = valoresPerdidas.length ? Math.min(...valoresPerdidas) : 0;
+      const maximoPerdidas = valoresPerdidas.length ? Math.max(...valoresPerdidas) : 0;
+
+      function crearFilaAcumulado(item, esReproceso = false) {
+        const tr = document.createElement("tr");
+        tr.className = esReproceso 
+          ? "bg-purple-50/70 hover:bg-purple-100 transition-colors border-b border-purple-200" 
+          : "hover:bg-slate-50 transition-colors border-b border-slate-100";
+
+        const bgSem = esReproceso 
+          ? 'bg-purple-200 text-purple-900 font-bold' 
+          : calcularSemaforoClass(item.acumulado_pct, item.objetivo_anual, item.resultado_anterior);
+
+        const desvioClase = item.desvio_kg < 0 ? 'text-red-600 font-bold' : 'text-slate-800';
+        const desvioStr = item.desvio_kg < 0 ? `(${Math.abs(Math.round(item.desvio_kg)).toLocaleString()})` : Math.round(item.desvio_kg).toLocaleString();
+
+        const difClase = item.diferencia < 0 ? 'text-red-600 font-bold' : 'text-slate-800';
+        const difStr = item.diferencia < 0 ? `(${Math.abs(Math.round(item.diferencia)).toLocaleString()})` : Math.round(item.diferencia).toLocaleString();
+        const perdidas = esReproceso ? 0 : Number(item.perdidas_pct);
+        const colorPerdidas = Number.isFinite(perdidas)
+          ? calcularColorPerdidas(perdidas, minimoPerdidas, maximoPerdidas)
+          : "";
+
+        tr.innerHTML = `
+          <td class="p-2 border-r font-bold text-slate-800">${item.maquina_label}</td>
+          <td class="p-1 border-r text-right bg-blue-50/40">
+            <input type="number" step="0.1" class="w-16 text-right bg-transparent focus:bg-white rounded px-1 text-slate-700 font-bold" value="${item.objetivo_anual}" onchange="guardarMetaYRecargar(${item.puesto}, this.value, null)">%
+          </td>
+          <td class="p-1 border-r text-right bg-blue-50/40">
+            <input type="number" step="0.1" class="w-16 text-right bg-transparent focus:bg-white rounded px-1 text-slate-700 font-bold" value="${item.resultado_anterior}" onchange="guardarMetaYRecargar(${item.puesto}, null, this.value)">%
+          </td>
+          <td class="p-2 border-r text-right font-black"><span class="px-2 py-0.5 rounded text-[11px] ${bgSem}">${esReproceso ? 'REPROCESO' : item.acumulado_pct.toFixed(1) + '%'}</span></td>
+          <td class="p-2 border-r text-right font-bold text-slate-900" style="background-color:${colorPerdidas}">${esReproceso ? '0.0%' : item.perdidas_pct.toFixed(1) + '%'}</td>
+          <td class="p-2 border-r text-right font-mono ${desvioClase}">${desvioStr}</td>
+          <td class="p-2 border-r text-right font-mono">${item.h_prog.toFixed(2)}</td>
+          <td class="p-2 border-r text-right font-mono font-bold text-blue-700">${item.h_prod.toFixed(2)}</td>
+          <td class="p-2 border-r text-right font-mono">${Math.round(item.kg_prog).toLocaleString()}</td>
+          <td class="p-2 border-r text-right font-mono font-bold">${Math.round(item.kg_real).toLocaleString()}</td>
+          <td class="p-2 border-r text-right font-mono text-slate-600">${Math.round(item.kg_hora_real).toLocaleString()}</td>
+          <td class="p-2 border-r text-right font-bold text-blue-900">${esReproceso ? '0%' : Math.round(item.cumpl_progr) + '%'}</td>
+          <td class="p-2 border-r text-right font-mono bg-red-50/20">${Math.round(item.kg_910).toLocaleString()} Kg</td>
+          <td class="p-2 border-r text-right font-mono bg-red-50/20">${Math.round(item.kg_920).toLocaleString()} Kg</td>
+          <td class="p-2 text-right font-mono font-bold bg-red-100/50 ${difClase}">${difStr} Kg</td>
+        `;
+        return tr;
+      }
+
+      function crearSubtotalAcumulado(titulo, lista) {
+        let totHProg = 0, totHProd = 0, totKgProg = 0, totKgReal = 0, totKg910 = 0, totKg920 = 0, totDesvioSuma = 0;
+        lista.forEach(i => {
+          totHProg += i.h_prog;
+          totHProd += i.h_prod;
+          totKgProg += i.kg_prog;
+          totKgReal += i.kg_real;
+          totKg910 += i.kg_910;
+          totKg920 += i.kg_920;
+          totDesvioSuma += i.desvio_kg;
+        });
+
+        const totAcum = totHProg > 0 ? (totHProd / totHProg * 100.0) : 0.0;
+        const totCumpl = totKgProg > 0 ? (totKgReal / totKgProg * 100.0) : 0.0;
+        const desvioStr = totDesvioSuma < 0 ? `(${Math.abs(Math.round(totDesvioSuma)).toLocaleString()})` : Math.round(totDesvioSuma).toLocaleString();
+
+        const difSub = totKg910 - totKg920;
+        const difSubStr = difSub < 0 ? `(${Math.abs(Math.round(difSub)).toLocaleString()})` : Math.round(difSub).toLocaleString();
+
+        const trSub = document.createElement("tr");
+        trSub.className = "bg-slate-300 font-extrabold text-slate-900 border-b-2 border-slate-400";
+        trSub.innerHTML = `
+          <td class="p-2 border-r border-slate-400 text-center uppercase" colspan="3">${titulo}</td>
+          <td class="p-2 border-r border-slate-400 text-right font-black text-blue-950">${totAcum.toFixed(1)}%</td>
+          <td class="p-2 border-r border-slate-400 text-right"></td>
+          <td class="p-2 border-r border-slate-400 text-right font-mono text-red-700 font-bold">${desvioStr}</td>
+          <td class="p-2 border-r border-slate-400 text-right font-mono">${totHProg.toFixed(2)}</td>
+          <td class="p-2 border-r border-slate-400 text-right font-mono text-blue-950">${totHProd.toFixed(2)}</td>
+          <td class="p-2 border-r border-slate-400 text-right font-mono">${Math.round(totKgProg).toLocaleString()}</td>
+          <td class="p-2 border-r border-slate-400 text-right font-mono">${Math.round(totKgReal).toLocaleString()}</td>
+          <td class="p-2 border-r border-slate-400 text-right"></td>
+          <td class="p-2 border-r border-slate-400 text-right font-black text-blue-900">${totCumpl.toFixed(2)}%</td>
+          <td class="p-2 border-r border-slate-400 text-right font-mono">${Math.round(totKg910).toLocaleString()} Kg</td>
+          <td class="p-2 border-r border-slate-400 text-right font-mono">${Math.round(totKg920).toLocaleString()} Kg</td>
+          <td class="p-2 text-right font-mono font-black">${difSubStr} Kg</td>
+        `;
+        return trSub;
+      }
+
+      if (data.maquinas_pt.length > 0) {
+        data.maquinas_pt.forEach(item => tbody.appendChild(crearFilaAcumulado(item)));
+        tbody.appendChild(crearSubtotalAcumulado("SUBTOTAL PT", data.maquinas_pt));
+      }
+
+      if (data.maquinas_se.length > 0) {
+        data.maquinas_se.forEach(item => tbody.appendChild(crearFilaAcumulado(item)));
+        tbody.appendChild(crearSubtotalAcumulado("SUBTOTAL SE", data.maquinas_se));
+      }
+
+      if (data.maquinas_reproceso.length > 0) {
+        data.maquinas_reproceso.forEach(item => tbody.appendChild(crearFilaAcumulado(item, true)));
+      }
+    }
+
+    async function guardarMetaYRecargar(puesto, objAnual, resAnterior) {
+      const payload = { puesto };
+      if (objAnual !== null && objAnual !== "") payload.objetivo_anual = parseFloat(objAnual);
+      if (resAnterior !== null && resAnterior !== "") payload.resultado_anterior = parseFloat(resAnterior);
+
+      try {
+        await fetch("/guardar-meta/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        await cargarAcumulado();
+      } catch (e) {
+        console.error("Error guardando meta:", e);
+      }
+    }
+
+    async function guardarMetaPlanta(campo, valor) {
+      const numero = Number.parseFloat(valor);
+      if (!Number.isFinite(numero)) {
+        alert("Ingresá un valor numérico válido.");
+        return;
+      }
+
+      try {
+        const response = await fetch("/guardar-meta-planta/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [campo]: numero })
+        });
+        const result = await response.json();
+        if (!response.ok || result.estado !== "ok") {
+          throw new Error(result.detail || "No se pudo guardar el valor.");
+        }
+      } catch (e) {
+        console.error("Error guardando meta de planta:", e);
+        alert(`Error al guardar: ${e.message}`);
+      }
+    }
+
+    function resetKPIs() {
+      document.getElementById("kpi-eficiencia-global").innerText = "0.00%";
+      document.getElementById("kpi-horas-global").innerText = "0.00 / 0 hs";
+      document.getElementById("kpi-eficiencia-pt").innerText = "0.00%";
+      document.getElementById("kpi-horas-pt").innerText = "0.00 / 0 hs";
+      document.getElementById("kpi-eficiencia-se").innerText = "0.00%";
+      document.getElementById("kpi-horas-se").innerText = "0.00 / 0 hs";
+      document.getElementById("kpi-kilos-pt").innerText = "0 Kg";
+      document.getElementById("kpi-unidades-pt").innerText = "0 Un";
+      document.getElementById("kpi-unidades-se").innerText = "0 Un";
+    }
+
+    function actualizarInterfaz(data) {
+      if (!data || data.estado === "sin_datos" || data.estado === "vacio") {
+        resetKPIs();
+        renderTablaFilasDiaria([]);
+        return;
+      }
+
+      document.getElementById("kpi-eficiencia-global").innerText = `${Number(data.eficiencia_global_porcentaje || 0).toFixed(2)}%`;
+      document.getElementById("kpi-horas-global").innerText = `${Number(data.horas_producidas_total || 0).toFixed(2)} / ${Number(data.horas_programadas || 0).toFixed(2)} hs`;
+      
+      document.getElementById("kpi-eficiencia-pt").innerText = `${Number(data.eficiencia_pt_porcentaje || 0).toFixed(2)}%`;
+      document.getElementById("kpi-horas-pt").innerText = `${Number(data.horas_producidas_pt || 0).toFixed(2)} / ${Number(data.horas_programadas_pt || 0).toFixed(2)} hs`;
+
+      document.getElementById("kpi-eficiencia-se").innerText = `${Number(data.eficiencia_se_porcentaje || 0).toFixed(2)}%`;
+      document.getElementById("kpi-horas-se").innerText = `${Number(data.horas_producidas_se || 0).toFixed(2)} / ${Number(data.horas_programadas_se || 0).toFixed(2)} hs`;
+      
+      document.getElementById("kpi-kilos-pt").innerText = `${Math.round(Number(data.kilos_totales_pt || 0)).toLocaleString()} Kg`;
+      document.getElementById("kpi-unidades-pt").innerText = `${Math.round(Number(data.unidades_totales_pt || 0)).toLocaleString()} Un`;
+      document.getElementById("kpi-unidades-se").innerText = `${Math.round(Number(data.unidades_totales_se || 0)).toLocaleString()} Un`;
+
+      renderTablaFilasDiaria(data.filas_detalle || []);
+    }
+
+    function renderTablaFilasDiaria(filas) {
+      const tbody = document.getElementById("tabla-body-diaria");
+      const soloActivas = document.getElementById("toggle-activas").checked;
+      tbody.innerHTML = "";
+
+      if (!filas || filas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="16" class="p-4 text-center text-slate-400 italic">No existen registros guardados para la fecha seleccionada.</td></tr>`;
+        return;
+      }
+
+      const maquinasAgrupadas = {};
+      filas.forEach(row => {
+        if (
+          soloActivas &&
+          Number(row.hsProductivas || 0) === 0 &&
+          Number(row.pesoProducido || 0) === 0 &&
+          Number(row.programado || 0) === 0 &&
+          Number(row.hsProgramadas || 0) === 0 &&
+          Number(row.puesto) !== 20
+        ) return;
+        const puesto = Number(row.puesto);
+        if (!maquinasAgrupadas[puesto]) {
+          maquinasAgrupadas[puesto] = [];
+        }
+        maquinasAgrupadas[puesto].push(row);
+      });
+
+      const ordenPuestos = Object.keys(maquinasAgrupadas).map(Number).sort((a, b) => {
+        const idxA = ordenMaquinasPersonalizado.indexOf(a);
+        const idxB = ordenMaquinasPersonalizado.indexOf(b);
+        const posA = idxA !== -1 ? idxA : 999;
+        const posB = idxB !== -1 ? idxB : 999;
+
+        if (posA !== posB) return posA - posB;
+        return a - b;
+      });
+
+      if (ordenPuestos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="16" class="p-4 text-center text-slate-400 italic">No hay máquinas con producción ni horas HPHI para esta fecha (desmarca "Solo Activas" para ver todas).</td></tr>`;
+        return;
+      }
+
+      ordenPuestos.forEach(puesto => {
+        const grupo = maquinasAgrupadas[puesto];
+        
+        let subUnidades = 0;
+        let subCod910 = 0;
+        let subCod920 = 0;
+        let subProgramadoKg = 0;
+        let subProgramadoUnidades = 0;
+        let tieneProgramadoKg = false;
+        let tieneProgramadoUnidades = false;
+        let subPesoProducido = 0;
+        let subDiferenciaKg = 0;
+        let subDiferenciaUnidades = 0;
+        let tieneDiferenciaKg = false;
+        let tieneDiferenciaUnidades = false;
+        let subHsProgramadas = 0;
+        let subHsProductivas = 0;
+
+        grupo.forEach(row => {
+          subUnidades += Number(row.unidadesProducidas || 0);
+          subCod910 += Number(row.unidades910 || 0);
+          subCod920 += Number(row.unidades920 || 0);
+          if (row.unidadProgramado === "Un") {
+            subProgramadoUnidades += Number(row.programado || 0);
+            tieneProgramadoUnidades = true;
+          } else {
+            subProgramadoKg += Number(row.programado || 0);
+            tieneProgramadoKg = true;
+          }
+          subPesoProducido += Number(row.pesoProducido || 0);
+          if (row.unidadProgramado === "Un") {
+            const unidadesProducidasNetas = Number(row.puesto) === 20
+              ? Number(row.unidades920 || 0)
+              : Number(row.unidadesProducidas || 0)
+                + Number(row.unidades910 || 0)
+                - Number(row.unidades920 || 0);
+            subDiferenciaUnidades += unidadesProducidasNetas - Number(row.programado || 0);
+            tieneDiferenciaUnidades = true;
+          } else {
+            subDiferenciaKg += Number(row.pesoProducido || 0) - Number(row.programado || 0);
+            tieneDiferenciaKg = true;
+          }
+          subHsProgramadas += Number(row.hsProgramadas || 0);
+          subHsProductivas += Number(row.hsProductivas || 0);
+
+          const tr = document.createElement("tr");
+          tr.className = puesto === 20 
+            ? "bg-purple-50/60 hover:bg-purple-100/80 transition-colors border-b border-purple-200"
+            : "hover:bg-slate-50 transition-colors border-b border-slate-100";
+
+          const pctEfi = (row.eficiencia * 100).toFixed(1);
+          const badgeMqClass = puesto === 20 
+            ? 'bg-purple-200 text-purple-900 font-bold' 
+            : (pctEfi >= 60 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800');
+
+          const pesoUnitarioStr = Number(row.pesoUnitario).toFixed(3).replace('.', ',');
+          const ritmoMaxStr = Math.round(Number(row.ritmoMax || 0)).toLocaleString();
+          const programadoStr = `${Number(row.programado || 0).toFixed(2).replace('.', ',')} ${row.unidadProgramado || "Kg"}`;
+          const diferencia = row.unidadProgramado === "Un"
+            ? (
+              (Number(row.puesto) === 20
+                ? Number(row.unidades920 || 0)
+                : Number(row.unidadesProducidas || 0)
+                  + Number(row.unidades910 || 0)
+                  - Number(row.unidades920 || 0))
+              - Number(row.programado || 0)
+            )
+            : Number(row.pesoProducido || 0) - Number(row.programado || 0);
+          const diferenciaStr = `${diferencia.toFixed(2).replace('.', ',')} ${row.unidadProgramado || "Kg"}`;
+
+          tr.innerHTML = `
+            <td class="p-2 border-r text-center font-bold text-slate-800">${row.puesto}</td>
+            <td class="p-2 border-r text-center font-bold text-slate-700">${row.turno}</td>
+            <td class="p-2 border-r text-center font-mono text-slate-600">${row.codigoMaquinista}</td>
+            <td class="p-2 border-r text-center font-mono text-slate-600">${row.ordenFabricacion}</td>
+            <td class="p-2 border-r text-center font-mono font-semibold text-slate-800">${row.producto}</td>
+            <td class="p-2 border-r text-right font-mono font-bold text-blue-700">${ritmoMaxStr}</td>
+            <td class="p-2 border-r text-right font-mono text-slate-600">${pesoUnitarioStr}</td>
+            <td class="p-2 border-r text-right font-mono font-bold text-slate-800">${Math.round(row.unidadesProducidas).toLocaleString()}</td>
+            <td class="p-2 border-r text-right font-mono text-slate-600">${Math.round(row.unidades910).toLocaleString()}</td>
+            <td class="p-2 border-r text-right font-mono font-bold ${puesto === 20 ? 'text-purple-800' : 'text-slate-600'}">${Math.round(row.unidades920).toLocaleString()}</td>
+            <td class="p-2 border-r text-right font-mono font-bold text-slate-700">${programadoStr}</td>
+            <td class="p-2 border-r text-right font-mono font-bold text-slate-900">${Number(row.pesoProducido).toFixed(2).replace('.', ',')} Kg</td>
+            <td class="p-2 border-r text-right font-mono font-bold text-slate-700">${diferenciaStr}</td>
+            <td class="p-2 border-r text-right font-mono text-slate-600">${Number(row.hsProgramadas).toFixed(2)} hs</td>
+            <td class="p-2 border-r text-right font-mono font-bold text-blue-600">${Number(row.hsProductivas).toFixed(2)} hs</td>
+            <td class="p-2 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeMqClass}">${puesto === 20 ? 'REPROCESO' : pctEfi + '%'}</span></td>
+          `;
+
+          tbody.appendChild(tr);
+        });
+
+        const subEfi = subHsProgramadas > 0 ? ((subHsProductivas / subHsProgramadas) * 100).toFixed(1) : "0.0";
+        const badgeSubClass = puesto === 20 
+          ? 'bg-purple-800 text-white' 
+          : (subEfi >= 60 ? 'bg-emerald-700 text-white' : 'bg-amber-600 text-white');
+
+        const trSub = document.createElement("tr");
+        trSub.className = puesto === 20
+          ? "bg-purple-200/90 font-black border-b-2 border-purple-400 text-slate-950"
+          : "bg-slate-300/90 font-black border-b-2 border-slate-400 text-slate-950";
+        const subtotalProgramado = [
+          tieneProgramadoKg ? `${Number(subProgramadoKg).toFixed(2).replace('.', ',')} Kg` : '',
+          tieneProgramadoUnidades ? `${Math.round(subProgramadoUnidades).toLocaleString()} Un` : ''
+        ].filter(Boolean).join(' / ') || '0,00';
+        const subtotalDiferencia = [
+          tieneDiferenciaKg ? `${Number(subDiferenciaKg).toFixed(2).replace('.', ',')} Kg` : '',
+          tieneDiferenciaUnidades ? `${Math.round(subDiferenciaUnidades).toLocaleString()} Un` : ''
+        ].filter(Boolean).join(' / ') || '0,00';
+
+        trSub.innerHTML = `
+          <td class="p-2.5 border-r border-slate-400 text-center uppercase tracking-wider text-[11px] font-extrabold" colspan="7">SUBTOTAL MÁQUINA ${puesto} ${puesto === 20 ? '(REPROCESO MANUAL)' : ''}</td>
+          <td class="p-2.5 border-r border-slate-400 text-right font-mono text-[12px]">${Math.round(subUnidades).toLocaleString()}</td>
+          <td class="p-2.5 border-r border-slate-400 text-right font-mono text-[11px]">${Math.round(subCod910).toLocaleString()}</td>
+          <td class="p-2.5 border-r border-slate-400 text-right font-mono text-[11px]">${Math.round(subCod920).toLocaleString()}</td>
+          <td class="p-2.5 border-r border-slate-400 text-right font-mono text-[12px]">${subtotalProgramado}</td>
+          <td class="p-2.5 border-r border-slate-400 text-right font-mono text-[12px] text-black">${Number(subPesoProducido).toFixed(2).replace('.', ',')} Kg</td>
+          <td class="p-2.5 border-r border-slate-400 text-right font-mono text-[12px]">${subtotalDiferencia}</td>
+          <td class="p-2.5 border-r border-slate-400 text-right font-mono text-[12px]">${Number(subHsProgramadas).toFixed(2)} hs</td>
+          <td class="p-2.5 border-r border-slate-400 text-right font-mono text-[12px] text-blue-900">${Number(subHsProductivas).toFixed(2)} hs</td>
+          <td class="p-2.5 text-center"><span class="px-2.5 py-0.5 rounded text-[11px] font-black ${badgeSubClass}">${puesto === 20 ? 'N/A' : subEfi + '%'}</span></td>
+        `;
+
+        tbody.appendChild(trSub);
+      });
+    }
+
+    async function cargarDatosFecha() {
+      const fechaSel = document.getElementById("fecha-selector").value;
+
+      try {
+        if (fechaSel) {
+          const resDiario = await fetch(`/historial-diario/?fecha=${fechaSel}`);
+          const dataDiario = await resDiario.json();
+
+          if (dataDiario && dataDiario.estado === "ok") {
+            actualizarInterfaz(dataDiario);
+            return;
+          }
+        }
+
+        const resFechas = await fetch('/fechas-disponibles/');
+        const dataFechas = await resFechas.json();
+
+        if (dataFechas && dataFechas.fechas && dataFechas.fechas.length > 0) {
+          const ultimaFecha = dataFechas.fechas[0];
+          document.getElementById("fecha-selector").value = ultimaFecha;
+          const resDiarioActualizado = await fetch(`/historial-diario/?fecha=${ultimaFecha}`);
+          const dataFinal = await resDiarioActualizado.json();
+          actualizarInterfaz(dataFinal);
+        } else {
+          actualizarInterfaz(null);
+        }
+      } catch (err) {
+        console.error("Error al cargar datos:", err);
+        actualizarInterfaz(null);
+      }
+    }
+
+    async function subirArchivosUnicos(event) {
+      const input = document.getElementById("file-input-unico");
+      const files = input.files;
+
+      if (!files || files.length === 0) return;
+
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append("archivos", files[i]);
+      }
+
+      try {
+        const response = await fetch("/procesar-sap/", {
+          method: "POST",
+          body: formData
+        });
+
+        const result = await response.json();
+        if (result && result.estado === "exito") {
+          alert(`¡${result.mensaje}!`);
+          await cargarDatosFecha();
+        } else {
+          const msjError = (result && result.mensaje) ? result.mensaje : "Error en los datos cargados o al procesar los archivos.";
+          alert("Error al procesar: " + msjError);
+        }
+      } catch (err) {
+        alert("Error de conexión con el servidor.");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      restaurarRangoAcumulado();
+      cargarDatosFecha();
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Local Python environment and caches
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local production data and workbooks
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.xlsx
+*.xls
+*.xlsm
+*.csv
+respaldos_excel/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Editor and operating-system files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
